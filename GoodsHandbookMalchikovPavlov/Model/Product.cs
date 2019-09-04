@@ -35,5 +35,17 @@ namespace GoodsHandbookMalchikovPavlov.Model
         /// Компания производитель или издатель
         /// </summary>
         private string company;
+
+        public string Name { get => name; set => name=value; }
+
+        public int Id { get => id; set => id = value; }
+
+        public int Count { get => count; set => count = value; }
+
+        public float Price { get => price; set => price = value; }
+
+        public string Unit { get => unit; set => unit = value; }
+
+        public string Company { get => company; set => company = value; }
     }
 }
