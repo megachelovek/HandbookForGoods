@@ -7,11 +7,6 @@ namespace GoodsHandbookMalchikovPavlov.Model
     class Book:Product
     {
         /// <summary>
-        /// Название книги
-        /// </summary>
-        private string name;
-
-        /// <summary>
         /// Автор
         /// </summary>
         private string author;
@@ -25,5 +20,11 @@ namespace GoodsHandbookMalchikovPavlov.Model
         /// Жанр
         /// </summary>
         private string genre;
+
+        public string Author { get => author; set => author = value; }
+
+        public int Year { get => year; set => year = value; }
+
+        public string Genre { get => genre; set => genre = value; }
     }
 }

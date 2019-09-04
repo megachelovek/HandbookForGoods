@@ -20,5 +20,11 @@ namespace GoodsHandbookMalchikovPavlov.Model
         /// Описание
         /// </summary>
         private string description;
+
+        public string Type { get => type; set => type = value; }
+
+        public string Model { get => model; set => model = value; }
+
+        public string Description { get => description; set => description = value; }
     }
 }
