@@ -3,11 +3,29 @@ namespace GoodsHandbookMalchikovPavlov
 {
     class Program
     {
-        static void Main(string[] args)
+         public static void Main()
         {
-            UserInputDispatcher dispatcher = new UserInputDispatcher();
-            while (dispatcher.ProcessUserInput(Console.ReadKey())
-            { }
+            Dispatcher dispatcher = new Dispatcher();
+            StringBuilder buffer = new StringBuilder();
+            while (true)
+            {
+                if (Console.In.Peek() == -1)
+                {
+                    buffer.Length -= Environment.NewLine.Length;
+                    dispatcher.ProcessInput(buffer.ToString());
+                    buffer.Length = 0;
+                }
+                int read = Console.In.Read();
+                if (read == -1)
+                {
+                    break;
+                }
+                else
+                {
+                    buffer.Append((char)read);
+                }
+            }
+
         }
     }
 }
