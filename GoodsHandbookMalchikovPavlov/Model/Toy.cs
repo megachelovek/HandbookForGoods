@@ -19,7 +19,7 @@ namespace GoodsHandbookMalchikovPavlov.Model
         /// <summary>
         /// Для девочек/мальчиков (f/m)
         /// </summary>
-        private char sex;
+        private string sex;
 
         /// <summary>
         /// Тип (мягкая, конструктор, образовательная)
@@ -30,7 +30,7 @@ namespace GoodsHandbookMalchikovPavlov.Model
 
         public int EndAge { get => endAge; set => endAge = value; }
 
-        public char Sex { get => sex; set => sex = value; }
+        public string Sex { get => sex; set => sex = value; }
 
         public string Type { get => type; set => type = value; }
 

@@ -1,398 +1,249 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-
+using GoodsHandbookMalchikovPavlov.Model;
+using GoodsHandbookMalchikovPavlov.Commands;
+using GoodsHandbookMalchikovPavlov.Validators;
 namespace GoodsHandbookMalchikovPavlov
 {
-    interface IValidator
+    sealed class Dispatcher
     {
-        bool Validate(string fieldName, string fieldValue);
-    }
 
-    
-    static class Common
-    {
-        public static bool StringsEqual(string first, int firstBegin, int firstEnd, string second, int secondBegin, int secondEnd)
+        private static readonly string USAGE =
+            "Program can be used to create, edit and view products information\n" +
+            "Usage: This is an interactive kind of program. Type any command name listed below\n" +
+            "and go through steps it takes to acomplish your task\n" +
+            "create              - to create a new record of a given product type\n" +
+            "list                - to list product records\n" +
+            "help [command name] - to get detailed information about a given command if applicable\n";
+
+        private List<Product> storage;
+        private readonly Dictionary<string, ICommand> commandMap;
+        private readonly Dictionary<string, Type> nameToProductMap;
+        private readonly Dictionary<Type, ProductValidator> productToValidatorMap;
+
+        private bool attemptingToExit = false;
+        private ICommand activeCommand = null;
+        private int prefixOffset = 0;
+
+        public Dispatcher()
         {
-            Debug.Assert(firstBegin >= 0 && firstBegin < first.Length);
-            Debug.Assert(firstEnd < first.Length);
-            Debug.Assert(secondBegin >= 0 && secondBegin < second.Length);
-            Debug.Assert(secondEnd < second.Length);
-            int firstLength = firstEnd - firstBegin + 1;
-            int secondLength = secondEnd - secondBegin + 1;
+            storage = new List<Product>();
+            nameToProductMap = new Dictionary<string, Type>();
+            productToValidatorMap = new Dictionary<Type, ProductValidator>();
 
-            if (firstLength > 0 && (firstLength == secondLength))
+            Type productType = typeof(Toy);
+            nameToProductMap.Add(productType.Name, productType);
+            productToValidatorMap.Add(productType, new ToyValidator());
+
+            productType = typeof(Book);
+            nameToProductMap.Add(productType.Name, productType);
+            productToValidatorMap.Add(productType, new BookValidator());
+
+            productType = typeof(HomeAppliances);
+            nameToProductMap.Add(productType.Name, productType);
+            productToValidatorMap.Add(productType, new HomeAppliancesValidator());
+
+            commandMap = new Dictionary<string, ICommand>();
+            commandMap.Add(ListCommand.GetName(), new ListCommand(storage));
+            commandMap.Add(HelpCommand.GetName(), new HelpCommand(commandMap));
+            commandMap.Add(CreateCommand.GetName(), new CreateCommand(storage, nameToProductMap, productToValidatorMap));
+
+            
+        }
+        public void Start()
+        {
+            Console.TreatControlCAsInput = true;
+
+            StringBuilder buffer = new StringBuilder();
+            int bufferIndex = 0;
+            bool attention = false;
+            PrintResponse(USAGE, false);
+            PrintPrompt();
+            while (true)
             {
-                for (int i = 0; i < firstLength; i++)
+                ConsoleKeyInfo keyInfo = Console.ReadKey(true);
+
+                bool printable = !Char.IsControl(keyInfo.KeyChar);
+                
+                if (keyInfo.Modifiers == ConsoleModifiers.Control)
                 {
-                    if (first[firstBegin + i] != second[secondBegin + i])
-                        return false;
+                    string output;
+                    if (ProcessCtrlCombinations(keyInfo, out output, out attention))
+                    {
+                        break;
+                    }
+                    PrintResponse(output, attention);
+                    PrintPrompt();
                 }
-                return true;
+                
+                else
+                {
+                    
+                    if (keyInfo.Key == ConsoleKey.Enter)
+                    {
+                        string output;
+                        if (ProcessInput(buffer.ToString(), out output, out attention))
+                        {
+                            break;
+                        }
+                        PrintResponse(output, attention);
+                        PrintPrompt();
+                        buffer.Length = 0;
+                        bufferIndex = 0;
+                     
+                    }
+                    else if (keyInfo.Key == ConsoleKey.Backspace)
+                    {
+                        if (bufferIndex > 0)
+                        {
+                            ClearPromptLine(buffer.Length);
+
+                            bufferIndex--;
+                            buffer.Remove(bufferIndex, 1);
+                            
+                            Console.Write(buffer.ToString());
+                            Console.SetCursorPosition(prefixOffset + bufferIndex, Console.CursorTop);
+                        }
+                    }
+                    else if (keyInfo.Key == ConsoleKey.LeftArrow)
+                    {
+                        if (bufferIndex > 0)
+                        {
+                            Console.SetCursorPosition(Console.CursorLeft - 1, Console.CursorTop);
+                            bufferIndex--;
+                        }
+                    }
+                    else if (keyInfo.Key == ConsoleKey.RightArrow)
+                    {
+                        if (bufferIndex < buffer.Length)
+                        {
+                            Console.SetCursorPosition(Console.CursorLeft + 1, Console.CursorTop);
+                            bufferIndex++;
+                        }
+                    }
+                    else if (printable)
+                    {
+                        buffer.Insert(bufferIndex++, keyInfo.KeyChar);
+                        ClearPromptLine(buffer.Length);
+
+                        Console.Write(buffer.ToString());
+                        Console.SetCursorPosition(prefixOffset + bufferIndex, Console.CursorTop);
+                    }
+                }
+            }
+        }
+
+        public bool ProcessInput(string input, out string output, out bool attention)
+        {
+            attention = false;
+            output = "";
+            if (attemptingToExit)
+            {
+                attemptingToExit = false;
+            }
+            if (activeCommand == null)
+            {
+                activeCommand = ParseCommandName(input);
+            }
+            if (activeCommand != null)
+            {
+                if (activeCommand.ProcessInput(input, out output, out attention))
+                {
+                    activeCommand = null;
+                }
+            }
+            return false;
+        }
+
+        public bool ProcessCtrlCombinations(ConsoleKeyInfo keyInfo, out string output, out bool attention)
+        {
+            attention = false;
+            output = "";
+
+            if (activeCommand != null)
+            {
+                if (activeCommand.ProcessCtrlCombinations(keyInfo, out output, out attention))
+                {
+                    activeCommand = null;
+                }
             }
             else
             {
-                return false;
-            }
-        }
-        public static bool FindString(string toFind, int begin, int end, IEnumerable<string> strings)
-        {
-            foreach (string str in  strings)
-            {
-
-                if (Common.StringsEqual(toFind, begin, end, str, 0, str.Length - 1))
+                if ((keyInfo.Key == ConsoleKey.Q))
                 {
-                    return true;
+                    if (attemptingToExit)
+                    {
+                        return true;
+                    }
+                    output = "Exit? Press CTRL+Q again to exit";
+                    attention = true;
+                    attemptingToExit = true;
+
+                }
+                else if (attemptingToExit)
+                {
+                    attemptingToExit = false;
                 }
             }
             return false;
         }
-    }
-
-    internal struct TokenInfo
-    {
-        public int begin;
-        public int end;
-    }
-
-    
-
-    abstract class Product
-    {
-        protected string name;
-        protected string company;
-    }
- 
-    internal enum ToyCategory
-    {
-        Educational, VideoGame
-    }
-    sealed class Toy : Product
-    {
-        private ToyCategory category;
-        private int age;
-        public string Name { get { return name; } set { name = value; } }
-        public string Company { get { return company; } set { company = value; } }
-        public ToyCategory Category { get { return category; } set { category = value; } }
-        public int Age { get { return age; } set { age = value; } }
-    }
-
-    static class ToyInfo
-    {
-        public static readonly Type TYPE = new Toy().GetType();
-        public static string[] TOY_FIELD_NAMES = { "Category", "Age" };
-        public static readonly string[] TOY_CATEGORY_NAMES = { "Educational", "Video Game", "Math", "Plastic" };
-        public const int MIN_AGE = 0;
-        public const int MAX_AGE = 18;
-    }
-    class ProductValidator : IValidator
-    {
-        public bool Validate(string fieldName, string fieldValue)
+        private void ClearPromptLine(int lineLength)
         {
-            switch (fieldName)
-            {
-                case "Name":
-                    {
-
-                    }
-                    break;
-                case "Company":
-                    {
-
-                    }
-                    break;
-            }
-            return true;
+            Console.SetCursorPosition(prefixOffset, Console.CursorTop);
+            for (int i = 0; i < lineLength; i++)
+                Console.Write(" ");
+            Console.SetCursorPosition(prefixOffset, Console.CursorTop);
         }
-    }
-    sealed class ToyValidator : IValidator
-    {
-        public bool Validate(string fieldName, string fieldValue)
-        {
-            switch (fieldName)
-            {
-                case "Category":
-                    {
-                        return Common.FindString(fieldValue, 0, fieldValue.Length - 1, ToyInfo.TOY_CATEGORY_NAMES);
-                    }
-                case "Age":
-                    {
-                        int age;
-                        if (Int32.TryParse(fieldValue, out age))
-                        {
-                            return (age >= ToyInfo.MIN_AGE && age <= ToyInfo.MAX_AGE);
-                        }
-                    }
-                    break;
-            }
-            return false;
-        }
-    }
-    internal enum DispatcherCommand
-    { None, Create, List }
-    sealed class Dispatcher
-    {
-        private static readonly Dictionary<string, DispatcherCommand> COMMAND_MAP = new Dictionary<string, DispatcherCommand>
-        {
-            { "create", DispatcherCommand.Create},
-            { "list", DispatcherCommand.List}
-        };
-
-        private static readonly Dictionary<string, Type> PRODUCT_MAP = new Dictionary<string, Type>
-        {
-            { "toy", ToyInfo.TYPE },
-            { "food", ToyInfo.TYPE },
-            { "device", ToyInfo.TYPE }
-
-        };
-
-        public static string[] PRODUCT_FIELD_NAMES = { "Name", "Company"};
-
         
-
-
-        private int currentField;
-        private DispatcherCommand activeCommand = DispatcherCommand.None;
-        private Type typeBeingCreated = null;
-        public void ProcessInput(string input)
+        private void PrintResponse(string response, bool attention)
         {
-
-            string proccessedInput;
-            List<TokenInfo> tokens = ParseInput(input, out proccessedInput);
-            if (tokens.Count > 0)
+            if (response.Length > 0)
             {
-                if (activeCommand == DispatcherCommand.None)
+                if (attention)
                 {
-                    activeCommand = ParseCommandName(proccessedInput, tokens[0]);
-                    if (activeCommand != DispatcherCommand.None)
-                    {
-                        tokens.RemoveAt(0);
-                    }
+                    Console.BackgroundColor = ConsoleColor.Red;
                 }
-
-                switch (activeCommand)
+                Console.SetCursorPosition(0, Console.CursorTop + 1);
+                Console.Write(response);
+                if (attention)
                 {
-                    case DispatcherCommand.Create:
-                        {
-                            if (ProcessCreateCommand(proccessedInput, tokens))
-                            {
-                                activeCommand = DispatcherCommand.None;
-                            }
-                        }
-                        break;
-
+                    Console.BackgroundColor = ConsoleColor.Black;
                 }
-
-#if false
-                Console.WriteLine(proccessedInput);
-                foreach(TokenInfo token in tokens)
-                {
-                    Console.WriteLine("begin: {0}, end: {1}, length: {2}", token.begin, token.end, token.end - token.begin + 1);
-                }
-#endif
             }
         }
 
-        private List<TokenInfo> ParseInput(string input, out string proccessedInput)
+        private void PrintPrompt()
         {
-            StringBuilder buffer = new StringBuilder(input.Length);
-            List<TokenInfo> tokens = new List<TokenInfo>();
-            int state = 0;
-            int count = 0;
-            int tokenBegin = -1;
-            for (int i = 0; i < input.Length; i++)
+            Console.ForegroundColor = ConsoleColor.Green;
+            Console.SetCursorPosition(0, Console.CursorTop + 1);
+            string prefix = "";
+            if (activeCommand != null)
             {
-                char ch = input[i];
-                switch (state)
-                {
-                    case 0:
-                        {
-                            if (ch == ' ')
-                            {
-
-                            }
-                            else if (ch == '"')
-                            {
-                                state = 1;
-                            }
-                            else if (ch == '\\')
-                            {
-                                state = 3;
-                            }
-                            else
-                            {
-                                state = 2;
-                                tokenBegin = buffer.Length;
-                                buffer.Append(ch);
-                                count++;
-                            }
-                        }break;
-                    case 1:
-                        {
-                            if (ch == '\\')
-                            {
-                                state = 4;
-                            }
-                            else if (ch == '"')
-                            {
-                                state = 5;
-                            }
-                            else
-                            {
-                                if (tokenBegin == -1)
-                                {
-                                    tokenBegin = buffer.Length;
-                                    buffer.Append(ch);
-                                    count++;
-                                }
-                                else
-                                {
-                                    buffer.Append(ch);
-                                }
-                            }
-                        }
-                        break;
-                    case 2:
-                        {
-                            if (ch == ' ')
-                            {
-                                tokens.Add(new TokenInfo { begin = tokenBegin, end = buffer.Length - 1 });
-                                buffer.Append(ch);
-                                state = 0;
-                                tokenBegin = -1;
-                            }
-                            else if (ch == '\\')
-                            {
-                                state = 3;
-                            }
-                            else if (ch == '"')
-                            {
-                                state = 6;
-                            }
-                            else
-                            {
-                                if (tokenBegin == -1)
-                                {
-                                    tokenBegin = buffer.Length;
-                                    buffer.Append(ch);
-                                    count++;
-                                }
-                                else
-                                {
-                                    buffer.Append(ch);
-                                }
-                            }
-
-                        }
-                        break;
-                    case 3:
-                        {
-                            if (ch == '\\' || ch == '"')
-                            {
-                                state = 2;
-                                if (tokenBegin == -1)
-                                {
-                                    tokenBegin = buffer.Length;
-                                    buffer.Append(ch);
-                                    count++;
-                                }
-                                else
-                                {
-                                    buffer.Append(ch);
-                                }
-                            }
-                            else
-                            {
-                                state = 6;
-                            }
-                        }
-                        break;
-                    case 4:
-                        {
-                            if (ch == '\\' || ch == '"')
-                            {
-                                state = 1;
-                                buffer.Append(ch);
-
-                            }
-                            else
-                            {
-                                state = 6;
-                            }
-                        }
-                        break;
-                    case 5:
-                        {
-                            if (ch == ' ')
-                            {
-                                tokens.Add(new TokenInfo { begin = tokenBegin, end = buffer.Length - 1 });
-                                buffer.Append(ch);
-                                state = 0;
-                                tokenBegin = -1;
-                            }
-                            else
-                            {
-                                state = 6;
-                            }
-                        }
-                        break;
-                    case 6:
-                        {
-                            count = 0;
-                            proccessedInput = null;
-                            return new List<TokenInfo>();
-                        }
-                }   
+                prefix = activeCommand.GetCommandName();
             }
-            switch (state)
-            {
-                case 2:
-                    {
-                        tokens.Add(new TokenInfo { begin = tokenBegin, end = buffer.Length - 1 });
-                    }
-                    break;
-                case 5:
-                    {
-                        tokens.Add(new TokenInfo { begin = tokenBegin, end = buffer.Length - 1 });
-                    }
-                    break;
-                case 1:
-                case 3:
-                case 4:
-                case 6:
-                    {
-                        proccessedInput = null;
-                        return new List<TokenInfo>();
-                    };
-            }
-            proccessedInput = buffer.ToString();
-            return tokens;
+            prefix += ">";
+            Console.Write(prefix);
+            prefixOffset = prefix.Length;
+            Console.ForegroundColor = ConsoleColor.Gray;
+
         }
-
-        private DispatcherCommand ParseCommandName(string commandString, TokenInfo token)
+        private ICommand ParseCommandName(string input)
         {
-            foreach (KeyValuePair<string, DispatcherCommand> pair in COMMAND_MAP)
+           
+            StringPos pos = Misc.GetWordPos(input, 0, input.Length - 1);
+            
+            foreach(KeyValuePair<string, ICommand> pair in commandMap)
             {
                 string commandName = pair.Key;
-                if (Common.StringsEqual(commandString, token.begin, token.end, commandName, 0, commandName.Length - 1))
+                if (Misc.StringsEqual(input, pos.begin, pos.end, commandName, 0, commandName.Length - 1))
                 {
                     return pair.Value;
                 }
             }
 
-            return DispatcherCommand.None;
+            return null;
         }
 
-        private bool ProcessCreateCommand(string argsString, List<TokenInfo> tokens)
-        {
-            string product = argsString.Substring(tokens[0].begin, tokens[0].end + 1);
-            if (PRODUCT_MAP.ContainsKey(product))
-            {
-                typeBeingCreated = PRODUCT_MAP[product];
-            }
-
-            return true;
-          
-        }
     }
 }

@@ -1,31 +1,36 @@
 ﻿using System;
+using System.IO;
+using System.Globalization;
+using System.Text;
+using System.Reflection;
 namespace GoodsHandbookMalchikovPavlov
 {
-    class Program
+
+    class Foo
     {
-         public static void Main()
+        private string dick;
+        public string Dick { get { return dick; } set { dick = value; } }
+    }
+
+    class Bar : Foo
+    {
+        private string cock;
+        public string Cock { get { return cock; } set { cock = value; } }
+
+    }
+
+    public static class Program
+    {
+
+        public static void Main()
         {
+           
             Dispatcher dispatcher = new Dispatcher();
-            StringBuilder buffer = new StringBuilder();
-            while (true)
-            {
-                if (Console.In.Peek() == -1)
-                {
-                    buffer.Length -= Environment.NewLine.Length;
-                    dispatcher.ProcessInput(buffer.ToString());
-                    buffer.Length = 0;
-                }
-                int read = Console.In.Read();
-                if (read == -1)
-                {
-                    break;
-                }
-                else
-                {
-                    buffer.Append((char)read);
-                }
-            }
+            dispatcher.Start();
 
         }
+
     }
 }
+
+
