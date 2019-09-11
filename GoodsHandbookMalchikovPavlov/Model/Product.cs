@@ -36,10 +36,11 @@ namespace GoodsHandbookMalchikovPavlov.Model
         /// </summary>
         private string company;
 
-        [Name("Product Name")]
-        public string Name { get => name; set => name=value; }
         [AutoId]
         public int Id { get => id; set => id = value; }
+        [Name("Product Name")]
+        public string Name { get => name; set => name=value; }
+       
 
         public int Count { get => count; set => count = value; }
 
