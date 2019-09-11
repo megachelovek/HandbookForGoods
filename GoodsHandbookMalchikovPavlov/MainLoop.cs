@@ -92,6 +92,11 @@ namespace GoodsHandbookMalchikovPavlov
             }
 
             productMap = CreateDictionaryOfCachedProductStuff(productTypes);
+
+            storage.Add(0, new Toy { Id = 0, Name = "Barby", Company = "Microsoft", Price = 0.07f, Count = 0, Unit = "things",  StartAge = 0, EndAge = 12, Sex = "Male", Type = "Doll" });
+            storage.Add(0, new Book { Id = 1, Name = "Tower", Company = "Ubisoft", Price = 6.37f, Count = 5, Unit = "things",  Author = "King", Genre = "Mystic", Year = 1999 });
+            storage.Add(0, new HomeAppliances { Id = 2, Name = "TV", Company = "Amazon", Price = 600.07f, Count = 7, Unit = "things", Type = "TV", Model = "GH_90", Description = "someshit" });
+
         }
         public void Begin()
         {
