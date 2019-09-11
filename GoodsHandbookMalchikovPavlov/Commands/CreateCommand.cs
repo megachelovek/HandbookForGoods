@@ -61,9 +61,9 @@ namespace GoodsHandbookMalchikovPavlov.Commands
                     propertyInfos = productType.GetProperties();
                     propertyIndex = 0;
                     product = (Product)Activator.CreateInstance(productType);
-                    productName = productType.Name;
+                    productName = ReflectionMisc.GetTypeName(productType);
                     validator = productToValidatorMap[productType];
-                    AppendFieldRequest();
+                    AppendPropertyRequest();
                 }
                 else
                 {
@@ -104,7 +104,7 @@ namespace GoodsHandbookMalchikovPavlov.Commands
                     attention = true;
                 }
 
-                AppendFieldRequest();
+                AppendPropertyRequest();
             }
             output = outputBuffer.ToString();
             return false;
@@ -160,10 +160,12 @@ namespace GoodsHandbookMalchikovPavlov.Commands
             outputBuffer.Append("Enter product name:");
         }
 
-        private void AppendFieldRequest()
+        private void AppendPropertyRequest()
         {
-            //string propertyDisplayedName = ((ProductPropertyNameAttribute)propertyInfos[propertyIndex].GetCustomAttribute(typeof(ProductPropertyNameAttribute))).Name;
-            outputBuffer.Append(string.Format("Enter value for the property \"{0}\" ( {1} out of {2} total fields of product \"{3}\" )", propertyInfos[propertyIndex].Name, propertyIndex + 1, propertyInfos.Length, productName));
+            PropertyInfo info = propertyInfos[propertyIndex];
+            string name = ReflectionMisc.GetPropertyName(info);
+            
+            outputBuffer.Append(string.Format("Enter value for the property \"{0}\" ( {1} out of {2} total properties of product \"{3}\" )", name, propertyIndex + 1, propertyInfos.Length, productName));
         }
 
         public static string GetName()

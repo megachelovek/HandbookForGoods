@@ -41,7 +41,7 @@ namespace GoodsHandbookMalchikovPavlov
             for (int i = 0; i < strings.Length; i++)
             {
 
-                if (Misc.StringsEqual(str, begin, end, strings[i], 0, str.Length - 1))
+                if (Misc.StringsEqual(str, begin, end, strings[i], 0, strings[i].Length - 1))
                 {
                     return i;
                 }
@@ -96,6 +96,8 @@ namespace GoodsHandbookMalchikovPavlov
             }
             return result;
         }
+
+       
     }
 
 }

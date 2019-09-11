@@ -33,15 +33,18 @@ namespace GoodsHandbookMalchikovPavlov
             productToValidatorMap = new Dictionary<Type, ProductValidator>();
 
             Type productType = typeof(Toy);
-            nameToProductMap.Add(productType.Name, productType);
+            string productName = ReflectionMisc.GetTypeName(productType);
+            nameToProductMap.Add(productName, productType);
             productToValidatorMap.Add(productType, new ToyValidator());
 
             productType = typeof(Book);
-            nameToProductMap.Add(productType.Name, productType);
+            productName = ReflectionMisc.GetTypeName(productType);
+            nameToProductMap.Add(productName, productType);
             productToValidatorMap.Add(productType, new BookValidator());
 
             productType = typeof(HomeAppliances);
-            nameToProductMap.Add(productType.Name, productType);
+            productName = ReflectionMisc.GetTypeName(productType);
+            nameToProductMap.Add(productName, productType);
             productToValidatorMap.Add(productType, new HomeAppliancesValidator());
 
             commandMap = new Dictionary<string, ICommand>();
@@ -244,6 +247,6 @@ namespace GoodsHandbookMalchikovPavlov
 
             return null;
         }
-
+        
     }
 }

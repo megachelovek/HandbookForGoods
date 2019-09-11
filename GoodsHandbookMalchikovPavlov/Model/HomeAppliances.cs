@@ -4,7 +4,8 @@ using System.Text;
 
 namespace GoodsHandbookMalchikovPavlov.Model
 {
-    class HomeAppliances:Product
+    [Name("Home Appliances")]
+    class HomeAppliances :Product
     {
         /// <summary>
         /// Тип товара (телефон\холодильник)
@@ -21,10 +22,13 @@ namespace GoodsHandbookMalchikovPavlov.Model
         /// </summary>
         private string description;
 
+        [Name("Home Appliance Type")]
         public string Type { get => type; set => type = value; }
 
+        [Name("Home Appliance Model")]
         public string Model { get => model; set => model = value; }
 
+        [Name("Home Appliance Description")]
         public string Description { get => description; set => description = value; }
     }
 }

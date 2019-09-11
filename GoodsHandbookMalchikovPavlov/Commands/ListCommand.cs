@@ -28,13 +28,14 @@ namespace GoodsHandbookMalchikovPavlov
                 outputBuffer.Append("List of stored product records:\n");
                 foreach (Product product in storage)
                 {
-                    Type productType = typeof(Product);
-                    string productName = productType.Name;
+                    Type productType = product.GetType();
+                    string productName = ReflectionMisc.GetTypeName(productType);
 
                     outputBuffer.Append(String.Format("Product name: \"{0}\"\n", productName));
                     foreach(var info in productType.GetProperties())
                     {
-                        outputBuffer.Append(String.Format("Property name: \"{0}\" ", info.Name));
+                        string name = ReflectionMisc.GetPropertyName(info);
+                        outputBuffer.Append(String.Format("Property name: \"{0}\" ", name));
                         object value = info.GetValue(product);
                         string valueAsString;
                         if (info.PropertyType.Equals(typeof(string)))

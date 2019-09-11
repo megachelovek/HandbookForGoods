@@ -5,8 +5,8 @@ using System.Text;
 namespace GoodsHandbookMalchikovPavlov
 {
     [AttributeUsage(AttributeTargets.Property)]
-    class ProductAutoIdAttribute : Attribute
+    class AutoIdAttribute : Attribute
     {
-        public ProductAutoIdAttribute() { }
+        public AutoIdAttribute() { }
     }
 }

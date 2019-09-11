@@ -11,9 +11,12 @@ namespace GoodsHandbookMalchikovPavlov
 
         public static void Main()
         {
-           
-            Dispatcher dispatcher = new Dispatcher();
-            dispatcher.Start();
+
+            //Dispatcher dispatcher = new Dispatcher();
+           //dispatcher.Start();
+
+           MainLoop mainLoop = new MainLoop();
+           mainLoop.Begin();
 
         }
 
