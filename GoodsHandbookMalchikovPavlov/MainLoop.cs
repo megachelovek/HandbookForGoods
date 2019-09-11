@@ -33,13 +33,15 @@ namespace GoodsHandbookMalchikovPavlov
         private readonly Dictionary<string, Command> commandMap = new Dictionary<string, Command>()
         {
             { "create", Command.Create },
-            { "list", Command.List },
+            { "list", Command.List}
         };
         private readonly Dictionary<string, Type> nameToProductTypeMap;
         private readonly Dictionary<Type, ProductCachedStuff> productMap;
         private readonly Dictionary<Type, ProductValidator> validatorMap;
 
-        private List<Product> storage = new List<Product>();
+        //private List<Product> storage = new List<Product>();
+        private Dictionary<int, Product> storage = new Dictionary<int, Product>();
+        
 
         private bool attemptingToExit = false;
 
@@ -340,18 +342,30 @@ namespace GoodsHandbookMalchikovPavlov
                     {
                         Type productType = nameToProductTypeMap[arg];
                         InitCreateCommand(productType);
+                        PropertyInfo info = createProductStuff.PropertyInfoArray[createPropertyIndex];
 
+                        if (Attribute.IsDefined(info, typeof(NameAttribute)))
+                        {
+                            createPropertyIndex++;
+
+                        }
                         OutputProductPropertyValueRequest(createProductType, createPropertyIndex);
                     }
                     else
                     {
                         OutputProductNameRequest();
                     }
+                    
                 }
                 else
                 {
                     PropertyInfo info = createProductStuff.PropertyInfoArray[createPropertyIndex];
-                    
+                    if (Attribute.IsDefined(info, typeof(NameAttribute)))
+                    {
+                        createPropertyIndex++;
+                        
+                    }
+
                     if (createValidator.Validate(createProductType, info, inputBuffer.ToString()))
                     {
                         info.SetValue(createProduct, createValidator.GetLastProperty());
@@ -362,7 +376,7 @@ namespace GoodsHandbookMalchikovPavlov
                         }
                         else
                         {
-                            storage.Add(createProduct);
+                            //storage.Add(createProduct);
                             createProductType = null;
                             createProduct = null;
                             createProductStuff = null;
@@ -378,7 +392,10 @@ namespace GoodsHandbookMalchikovPavlov
                         outputBuffer.Append(createValidator.GetLastError());
                         outputAttention = true;
                     }
-
+                    if (Attribute.IsDefined(info, typeof(NameAttribute)))
+                    {
+                        createPropertyIndex++;
+                    }
                     OutputProductPropertyValueRequest(createProductType, createPropertyIndex);
                 }
             }
@@ -526,11 +543,11 @@ namespace GoodsHandbookMalchikovPavlov
             string name = ReflectionMisc.GetPropertyName(info);
             buffer.Append(string.Format("Enter Value for \"{0}\"\n", name));
         }
-        private static void MakeProductRecordsListString(List<Product> products, Dictionary<Type, ProductCachedStuff> productCachedStuffDict, Type filterProduct, StringBuilder buffer)
+        private static void MakeProductRecordsListString(Dictionary<int, Product> products, Dictionary<Type, ProductCachedStuff> productCachedStuffDict, Type filterProduct, StringBuilder buffer)
         {
-            foreach (var product in products)
+            foreach (var pair in products)
             {
-                Type type = product.GetType();
+                Type type = pair.GetType();
                 if (filterProduct != null)
                 {
                     if (type.Equals(filterProduct))
@@ -540,7 +557,7 @@ namespace GoodsHandbookMalchikovPavlov
                         buffer.Append(String.Format("Product name: \"{0}\"\n", cache.ProductName));
                         for (int i = 0; i < cache.PropertyInfoArray.Length; i++)
                         {
-                            MakeProductPropertyString(product, cache.PropertyInfoArray, cache.ProperPropertyNames, i, buffer);
+                            MakeProductPropertyString(pair.Value, cache.PropertyInfoArray, cache.ProperPropertyNames, i, buffer);
                         }
                     }
                 }
@@ -551,7 +568,7 @@ namespace GoodsHandbookMalchikovPavlov
                     buffer.Append(String.Format("Product name: \"{0}\"\n", cache.ProductName));
                     for (int i = 0; i < cache.PropertyInfoArray.Length; i++)
                     {
-                        MakeProductPropertyString(product, cache.PropertyInfoArray, cache.ProperPropertyNames, i, buffer);
+                        MakeProductPropertyString(pair.Value, cache.PropertyInfoArray, cache.ProperPropertyNames, i, buffer);
                     }
                 }
             }
