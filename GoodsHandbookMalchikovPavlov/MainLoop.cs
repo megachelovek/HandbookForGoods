@@ -486,13 +486,11 @@ namespace GoodsHandbookMalchikovPavlov
 
         private bool ProccessAddRange()
         {
-            if (createInputRequested)
-            {
                 string[] arg = inputBuffer.ToString().Split(' ');
                 if (arg.Length == 2)
                 {
-                    var currentItem = this.storage[Convert.ToInt32(arg[0])];
-                    currentItem.Count = Convert.ToInt32(arg[1]);
+                    var currentItem = this.storage[Convert.ToInt32(arg[0])]; // <= Ошибка получения 
+                    currentItem.Count = Convert.ToInt32(arg[1]); 
                     OutputProductPropertyValueRequest(createProductType, createPropertyIndex);
                     outputBuffer.Append("Product has been successfully updated");
                     outputBuffer.Append($"Product {currentItem.Name} current count is {currentItem.Count}");
@@ -502,14 +500,12 @@ namespace GoodsHandbookMalchikovPavlov
                 {
                     OutputProductAddRangeRequest();
                 }
-            }
+            
             return false;
         }
 
         private bool ProccessDeleteRange()
         {
-            if (createInputRequested)
-            {
                 string[] arg = inputBuffer.ToString().Split(' ');
                 if (arg.Length == 2)
                 {
@@ -531,7 +527,7 @@ namespace GoodsHandbookMalchikovPavlov
                 {
                     OutputProductDeleteRangeRequest();
                 }
-            }
+            
             return false;
         }
 
