@@ -365,8 +365,10 @@ namespace GoodsHandbookMalchikovPavlov
                         InitCreateCommand(productType);
                         PropertyInfo info = createProductStuff.PropertyInfoArray[createPropertyIndex];
 
-                        if (Attribute.IsDefined(info, typeof(NameAttribute)))
+                        if (Attribute.IsDefined(info, typeof(AutoIdAttribute)))
                         {
+                            int productId = GetFreeProductId(storage);
+                            info.SetValue(createProduct, productId);
                             createPropertyIndex++;
 
                         }
@@ -381,15 +383,13 @@ namespace GoodsHandbookMalchikovPavlov
                 else
                 {
                     PropertyInfo info = createProductStuff.PropertyInfoArray[createPropertyIndex];
-                    if (Attribute.IsDefined(info, typeof(NameAttribute)))
-                    {
-                        createPropertyIndex++;
 
-                    }
-
-                    if (createValidator.Validate(createProductType, info, inputBuffer.ToString()))
+                    bool validateSuccess = createValidator.Validate(createProductType, info, inputBuffer.ToString());
+                    if (validateSuccess)
                     {
+                       
                         info.SetValue(createProduct, createValidator.GetLastProperty());
+                        
 
                         if ((createPropertyIndex + 1) < createProductStuff.PropertyInfoArray.Length)
                         {
@@ -397,7 +397,7 @@ namespace GoodsHandbookMalchikovPavlov
                         }
                         else
                         {
-                            //storage.Add(createProduct);
+                            storage.Add(createProduct.Id, createProduct);
                             createProductType = null;
                             createProduct = null;
                             createProductStuff = null;
@@ -410,12 +410,17 @@ namespace GoodsHandbookMalchikovPavlov
                     }
                     else
                     {
+                        
                         outputBuffer.Append(createValidator.GetLastError());
                         outputAttention = true;
                     }
-                    if (Attribute.IsDefined(info, typeof(NameAttribute)))
+                    info = createProductStuff.PropertyInfoArray[createPropertyIndex];
+                    if (Attribute.IsDefined(info, typeof(AutoIdAttribute)))
                     {
+                        int productId = GetFreeProductId(storage);
+                        info.SetValue(createProduct, productId);
                         createPropertyIndex++;
+
                     }
                     OutputProductPropertyValueRequest(createProductType, createPropertyIndex);
                 }
@@ -634,7 +639,7 @@ namespace GoodsHandbookMalchikovPavlov
         {
             foreach (var pair in products)
             {
-                Type type = pair.GetType();
+                Type type = pair.Value.GetType();
                 if (filterProduct != null)
                 {
                     if (type.Equals(filterProduct))
@@ -659,6 +664,11 @@ namespace GoodsHandbookMalchikovPavlov
                     }
                 }
             }
+        }
+
+        private static int GetFreeProductId(Dictionary<int, Product> products)
+        {
+            return products.Keys.Count;
         }
 
 #if false
