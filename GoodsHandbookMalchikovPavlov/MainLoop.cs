@@ -19,7 +19,7 @@ namespace GoodsHandbookMalchikovPavlov
 
     }
     internal enum Command
-    { None, Create, List}
+    { None, Create, List, AddRange, DeleteRange }
     public sealed class MainLoop
     {
         private static readonly string USAGE_TEXT =
@@ -28,24 +28,26 @@ namespace GoodsHandbookMalchikovPavlov
            "and go through steps it takes to acomplish your task\n" +
            "create [product name] - to create a new record of a given product type\n" +
            "list [product name]   - to list product records, optionally filter by product type\n" +
+           "add_range [product id] [product count]   - to add count of item to product with this ID\n" +
+           "delete_range [product id] [product count]   - to delete count of item to product with this ID\n" +
            "help [command name]   - to get detailed information about a given command if applicable\n";
 
         private readonly Dictionary<string, Command> commandMap = new Dictionary<string, Command>()
         {
             { "create", Command.Create },
-            { "list", Command.List}
+            { "list", Command.List},
+            { "add_range", Command.AddRange},
+            { "delete_range", Command.DeleteRange}
         };
         private readonly Dictionary<string, Type> nameToProductTypeMap;
         private readonly Dictionary<Type, ProductCachedStuff> productMap;
         private readonly Dictionary<Type, ProductValidator> validatorMap;
 
-        //private List<Product> storage = new List<Product>();
         private Dictionary<int, Product> storage = new Dictionary<int, Product>();
-        
 
         private bool attemptingToExit = false;
 
-        private Command activeCommand= Command.None;
+        private Command activeCommand = Command.None;
         private string promptPrefix = ">";
 
         private StringBuilder inputBuffer = new StringBuilder();
@@ -61,6 +63,7 @@ namespace GoodsHandbookMalchikovPavlov
         private int createPropertyIndex = 0;
         private ProductCachedStuff createProductStuff = null;
         private ProductValidator createValidator = null;
+        private int createProductsById = 0;
 
         private Type listProductType = null;
         private bool listInputRequested = false;
@@ -126,7 +129,7 @@ namespace GoodsHandbookMalchikovPavlov
                 {
                     interruptedByCtrlCombination = true;
                     keyPressedWithCtrl = keyInfo.Key;
-                  break;
+                    break;
                 }
 
                 else
@@ -134,7 +137,7 @@ namespace GoodsHandbookMalchikovPavlov
 
                     if (keyInfo.Key == ConsoleKey.Enter)
                     {
-                       break;
+                        break;
                     }
                     else if (keyInfo.Key == ConsoleKey.Backspace)
                     {
@@ -249,7 +252,25 @@ namespace GoodsHandbookMalchikovPavlov
                         {
                             activeCommand = Command.None;
                         }
-                       
+
+                    }
+                    break;
+                case Command.AddRange:
+                    {
+                        if (ProccessAddRange())
+                        {
+                            activeCommand = Command.None;
+                        }
+
+                    }
+                    break;
+                case Command.DeleteRange:
+                    {
+                        if (ProccessDeleteRange())
+                        {
+                            activeCommand = Command.None;
+                        }
+
                     }
                     break;
             }
@@ -362,7 +383,7 @@ namespace GoodsHandbookMalchikovPavlov
                     {
                         OutputProductNameRequest();
                     }
-                    
+
                 }
                 else
                 {
@@ -422,7 +443,7 @@ namespace GoodsHandbookMalchikovPavlov
                 }
 
                 createInputRequested = true;
-               
+
             }
             return false;
         }
@@ -468,6 +489,57 @@ namespace GoodsHandbookMalchikovPavlov
             }
         }
 
+        private bool ProccessAddRange()
+        {
+            if (createInputRequested)
+            {
+                string[] arg = inputBuffer.ToString().Split(' ');
+                if (arg.Length == 2)
+                {
+                    var currentItem = this.storage[Convert.ToInt32(arg[0])];
+                    currentItem.Count = Convert.ToInt32(arg[1]);
+                    OutputProductPropertyValueRequest(createProductType, createPropertyIndex);
+                    outputBuffer.Append("Product has been successfully updated");
+                    outputBuffer.Append($"Product {currentItem.Name} current count is {currentItem.Count}");
+                    return true;
+                }
+                else
+                {
+                    OutputProductAddRangeRequest();
+                }
+            }
+            return false;
+        }
+
+        private bool ProccessDeleteRange()
+        {
+            if (createInputRequested)
+            {
+                string[] arg = inputBuffer.ToString().Split(' ');
+                if (arg.Length == 2)
+                {
+                    var currentItem = this.storage[Convert.ToInt32(arg[0])];
+                    if (currentItem.Count < Convert.ToInt32(arg[1]))
+                    {
+                        OutputProductDeleteRangeRequest(Convert.ToInt32(arg[1]));
+                    }
+                    else
+                    {
+                        currentItem.Count = currentItem.Count - Convert.ToInt32(arg[1]);
+                        OutputProductPropertyValueRequest(createProductType, createPropertyIndex);
+                        outputBuffer.Append("Product has been successfully updated");
+                        outputBuffer.Append($"Product {currentItem.Name} current count is {currentItem.Count}");
+                        return true;
+                    }
+                }
+                else
+                {
+                    OutputProductDeleteRangeRequest();
+                }
+            }
+            return false;
+        }
+
         private void InitCreateCommand(Type productType)
         {
             createProductType = productType;
@@ -491,6 +563,21 @@ namespace GoodsHandbookMalchikovPavlov
         {
             string name = productMap[productType].ProperPropertyNames[index]; 
             outputBuffer.Append(string.Format("Enter Value for \"{0}\"\n", name));
+        }
+        private void OutputProductAddRangeRequest()
+        {
+            outputBuffer.Append("Enter Id product and count");
+        }
+        private void OutputProductDeleteRangeRequest(object currentCount = null)
+        {
+            if (currentCount != null)
+            {
+                outputBuffer.Append("Enter Id product and count to delete [123 10]");
+            }
+            else
+            {
+                outputBuffer.Append($"Count to delete should be less than {currentCount}");
+            }
         }
         private void UpdatePromptPrefix()
         {
