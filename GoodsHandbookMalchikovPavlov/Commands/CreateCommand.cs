@@ -1,44 +1,46 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
 using System.Reflection;
+using System.Text;
 using GoodsHandbookMalchikovPavlov.Model;
 using GoodsHandbookMalchikovPavlov.Validators;
+
 namespace GoodsHandbookMalchikovPavlov.Commands
 {
-    sealed class CreateCommand : ICommand
+    internal sealed class CreateCommand : ICommand
     {
         private const string NAME = "create";
-        private const string USAGE = "create command is designed to be used in interactive fashion so just follow what it's saying";
-        private bool sessionStarted;
-        private bool inputRequested = false;
-        private bool attemptingToExit = false;
-        private StringBuilder outputBuffer = new StringBuilder();
+
+        private const string USAGE =
+            "create command is designed to be used in interactive fashion so just follow what it's saying";
+
         private readonly Dictionary<string, Type> nameToProductMap;
         private readonly Dictionary<Type, ProductValidator> productToValidatorMap;
-        private ProductValidator validator;
-        private Type productType;
+        private bool attemptingToExit;
+        private bool inputRequested;
+        private readonly StringBuilder outputBuffer = new StringBuilder();
         private Product product;
-        PropertyInfo[] propertyInfos;
-        private int propertyIndex;
         private string productName;
-        private List<Product> storage = null;
+        private Type productType;
+        private int propertyIndex;
+        private PropertyInfo[] propertyInfos;
+        private bool sessionStarted;
+        private readonly List<Product> storage;
+        private ProductValidator validator;
 
         public CreateCommand(List<Product> storage, Dictionary<string, Type> nameToProductMap,
-           Dictionary<Type, ProductValidator> productToValidatorMap)
+            Dictionary<Type, ProductValidator> productToValidatorMap)
         {
             this.storage = storage;
             this.nameToProductMap = nameToProductMap;
             this.productToValidatorMap = productToValidatorMap;
         }
+
         public bool ProcessInput(string input, out string output, out bool attention)
         {
             attention = false;
             outputBuffer.Length = 0;
-            if (attemptingToExit)
-            {
-                attemptingToExit = false;
-            }
+            if (attemptingToExit) attemptingToExit = false;
 
             if (!sessionStarted)
             {
@@ -47,10 +49,8 @@ namespace GoodsHandbookMalchikovPavlov.Commands
                     output = GetCommandUsageText();
                     return true;
                 }
-                else
-                {
-                    sessionStarted = true;
-                }
+
+                sessionStarted = true;
             }
 
             if (productType == null)
@@ -60,7 +60,7 @@ namespace GoodsHandbookMalchikovPavlov.Commands
                     productType = nameToProductMap[input];
                     propertyInfos = productType.GetProperties();
                     propertyIndex = 0;
-                    product = (Product)Activator.CreateInstance(productType);
+                    product = (Product) Activator.CreateInstance(productType);
                     productName = ReflectionMisc.GetTypeName(productType);
                     validator = productToValidatorMap[productType];
                     AppendPropertyRequest();
@@ -73,12 +73,12 @@ namespace GoodsHandbookMalchikovPavlov.Commands
             }
             else
             {
-                PropertyInfo info = propertyInfos[propertyIndex];
+                var info = propertyInfos[propertyIndex];
                 if (validator.Validate(productType, info, input))
                 {
                     info.SetValue(product, validator.GetLastProperty());
 
-                    if ((propertyIndex + 1) < propertyInfos.Length)
+                    if (propertyIndex + 1 < propertyInfos.Length)
                     {
                         propertyIndex++;
                     }
@@ -96,7 +96,6 @@ namespace GoodsHandbookMalchikovPavlov.Commands
                         output = outputBuffer.ToString();
                         return true;
                     }
-
                 }
                 else
                 {
@@ -106,15 +105,16 @@ namespace GoodsHandbookMalchikovPavlov.Commands
 
                 AppendPropertyRequest();
             }
+
             output = outputBuffer.ToString();
             return false;
-
         }
+
         public bool ProcessCtrlCombinations(ConsoleKeyInfo keyInfo, out string output, out bool attention)
         {
             attention = false;
             output = "";
-            if ((keyInfo.Key == ConsoleKey.Q))
+            if (keyInfo.Key == ConsoleKey.Q)
             {
                 if (attemptingToExit)
                 {
@@ -127,17 +127,19 @@ namespace GoodsHandbookMalchikovPavlov.Commands
                     inputRequested = false;
                     return true;
                 }
+
                 output = "Go back? Confirm action by pressing CTRL+Q again";
                 attention = true;
                 attemptingToExit = true;
-
             }
             else if (attemptingToExit)
             {
                 attemptingToExit = false;
             }
+
             return false;
         }
+
         public string GetCommandName()
         {
             return NAME;
@@ -157,15 +159,18 @@ namespace GoodsHandbookMalchikovPavlov.Commands
                 outputBuffer.Append(pair.Key);
                 outputBuffer.Append("\n");
             }
+
             outputBuffer.Append("Enter product name:");
         }
 
         private void AppendPropertyRequest()
         {
-            PropertyInfo info = propertyInfos[propertyIndex];
-            string name = ReflectionMisc.GetPropertyName(info);
-            
-            outputBuffer.Append(string.Format("Enter value for the property \"{0}\" ( {1} out of {2} total properties of product \"{3}\" )", name, propertyIndex + 1, propertyInfos.Length, productName));
+            var info = propertyInfos[propertyIndex];
+            var name = ReflectionMisc.GetPropertyName(info);
+
+            outputBuffer.Append(string.Format(
+                "Enter value for the property \"{0}\" ( {1} out of {2} total properties of product \"{3}\" )", name,
+                propertyIndex + 1, propertyInfos.Length, productName));
         }
 
         public static string GetName()

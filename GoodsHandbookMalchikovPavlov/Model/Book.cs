@@ -1,30 +1,38 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace GoodsHandbookMalchikovPavlov.Model
+﻿namespace GoodsHandbookMalchikovPavlov.Model
 {
-    class Book:Product
+    internal class Book : Product
     {
         /// <summary>
-        /// Автор
+        ///     Автор
         /// </summary>
         private string author;
 
         /// <summary>
-        /// Год издания
-        /// </summary>
-        private int year;
-        
-        /// <summary>
-        /// Жанр
+        ///     Жанр
         /// </summary>
         private string genre;
 
-        public string Author { get => author; set => author = value; }
+        /// <summary>
+        ///     Год издания
+        /// </summary>
+        private int year;
 
-        public int Year { get => year; set => year = value; }
+        public string Author
+        {
+            get => author;
+            set => author = value;
+        }
 
-        public string Genre { get => genre; set => genre = value; }
+        public int Year
+        {
+            get => year;
+            set => year = value;
+        }
+
+        public string Genre
+        {
+            get => genre;
+            set => genre = value;
+        }
     }
 }

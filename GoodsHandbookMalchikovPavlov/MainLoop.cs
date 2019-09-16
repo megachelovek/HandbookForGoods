@@ -1,90 +1,97 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
 using System.Diagnostics;
 using System.Reflection;
+using System.Text;
 using GoodsHandbookMalchikovPavlov.Model;
 using GoodsHandbookMalchikovPavlov.Validators;
+
 namespace GoodsHandbookMalchikovPavlov
 {
     internal sealed class ProductCachedStuff
     {
-        private string productName;
-        private PropertyInfo[] propertyInfoArray;
-        private string[] properPropertyNames;
+        public string ProductName { get; set; }
 
-        public string ProductName { get { return productName; } set { productName = value; } }
-        public PropertyInfo[] PropertyInfoArray { get { return propertyInfoArray; } set { propertyInfoArray = value; } }
-        public string[] ProperPropertyNames { get { return properPropertyNames; } set { properPropertyNames = value; } }
+        public PropertyInfo[] PropertyInfoArray { get; set; }
 
+        public string[] ProperPropertyNames { get; set; }
     }
+
     internal enum Command
-    { None, Create, List, AddRange, DeleteRange }
+    {
+        None,
+        Create,
+        List,
+        AddRange,
+        DeleteRange
+    }
+
     public sealed class MainLoop
     {
         private static readonly string USAGE_TEXT =
-           "Program can be used to create, edit and view products information\n" +
-           "Usage: This is an interactive kind of program. Type any command name listed below\n" +
-           "and go through steps it takes to acomplish your task\n" +
-           "create [product name] - to create a new record of a given product type\n" +
-           "list [product name]   - to list product records, optionally filter by product type\n" +
-           "add_range [product id] [product count]   - to add count of item to product with this ID\n" +
-           "delete_range [product id] [product count]   - to delete count of item to product with this ID\n" +
-           "help [command name]   - to get detailed information about a given command if applicable\n";
+            "Program can be used to create, edit and view products information\n" +
+            "Usage: This is an interactive kind of program. Type any command name listed below\n" +
+            "and go through steps it takes to acomplish your task\n" +
+            "create [product name] - to create a new record of a given product type\n" +
+            "list [product name]   - to list product records, optionally filter by product type\n" +
+            "add_range [product id] [product count]   - to add count of item to product with this ID\n" +
+            "delete_range [product id] [product count]   - to delete count of item to product with this ID\n" +
+            "help [command name]   - to get detailed information about a given command if applicable\n";
 
-        private readonly Dictionary<string, Command> commandMap = new Dictionary<string, Command>()
+        private readonly Dictionary<string, Command> commandMap = new Dictionary<string, Command>
         {
-            { "create", Command.Create },
-            { "list", Command.List},
-            { "add_range", Command.AddRange},
-            { "delete_range", Command.DeleteRange}
+            {"create", Command.Create},
+            {"list", Command.List},
+            {"add_range", Command.AddRange},
+            {"delete_range", Command.DeleteRange}
         };
+
         private readonly Dictionary<string, Type> nameToProductTypeMap;
         private readonly Dictionary<Type, ProductCachedStuff> productMap;
         private readonly Dictionary<Type, ProductValidator> validatorMap;
 
-        private Dictionary<int, Product> storage = new Dictionary<int, Product>();
+        private readonly Dictionary<int, Product> storage = new Dictionary<int, Product>();
 
-        private bool attemptingToExit = false;
+        private bool attemptingToExit;
 
         private Command activeCommand = Command.None;
         private string promptPrefix = ">";
 
-        private StringBuilder inputBuffer = new StringBuilder();
-        private StringBuilder outputBuffer = new StringBuilder();
-        private bool outputAttention = false;
+        private readonly StringBuilder inputBuffer = new StringBuilder();
+        private readonly StringBuilder outputBuffer = new StringBuilder();
+        private bool outputAttention;
 
         private bool interruptedByCtrlCombination;
         private ConsoleKey keyPressedWithCtrl;
 
-        private Type createProductType = null;
-        private Product createProduct = null;
-        private bool createInputRequested = false;
-        private int createPropertyIndex = 0;
-        private ProductCachedStuff createProductStuff = null;
-        private ProductValidator createValidator = null;
+        private Type createProductType;
+        private Product createProduct;
+        private bool createInputRequested;
+        private int createPropertyIndex;
+        private ProductCachedStuff createProductStuff;
+        private ProductValidator createValidator;
         private int createProductsById = 0;
 
-        private Type listProductType = null;
-        private bool listInputRequested = false;
+        private Type listProductType;
+        private bool listInputRequested;
 
         public MainLoop()
         {
             nameToProductTypeMap = new Dictionary<string, Type>();
             validatorMap = new Dictionary<Type, ProductValidator>();
-            Type[] productTypes = new Type[]
-                {
-                    typeof(Toy),
-                    typeof(Book),
-                    typeof(HomeAppliances)
-                };
-            ProductValidator[] validators = new ProductValidator[]
-                {
-                    new ToyValidator(),
-                    new BookValidator(),
-                    new HomeAppliancesValidator()
-                };
-            for (int i = 0; i < productTypes.Length; i++)
+            Type[] productTypes =
+            {
+                typeof(Toy),
+                typeof(Book),
+                typeof(HomeAppliances)
+            };
+            ProductValidator[] validators =
+            {
+                new ToyValidator(),
+                new BookValidator(),
+                new HomeAppliancesValidator()
+            };
+            for (var i = 0; i < productTypes.Length; i++)
             {
                 var type = productTypes[i];
                 nameToProductTypeMap.Add(ReflectionMisc.GetTypeName(type), type);
@@ -93,16 +100,31 @@ namespace GoodsHandbookMalchikovPavlov
 
             productMap = CreateDictionaryOfCachedProductStuff(productTypes);
 
-            storage.Add(0, new Toy { Id = 0, Name = "Barby", Company = "Microsoft", Price = 0.07f, Count = 0, Unit = "things",  StartAge = 0, EndAge = 12, Sex = "Male", Type = "Doll" });
-            storage.Add(1, new Book { Id = 1, Name = "Tower", Company = "Ubisoft", Price = 6.37f, Count = 5, Unit = "things",  Author = "King", Genre = "Mystic", Year = 1999 });
-            storage.Add(2, new HomeAppliances { Id = 2, Name = "TV", Company = "Amazon", Price = 600.07f, Count = 7, Unit = "things", Type = "TV", Model = "GH_90", Description = "someshit" });
-
+            storage.Add(0,
+                new Toy
+                {
+                    Id = 0, Name = "Barby", Company = "Microsoft", Price = 0.07f, Count = 0, Unit = "things",
+                    StartAge = 0, EndAge = 12, Sex = "Male", Type = "Doll"
+                });
+            storage.Add(1,
+                new Book
+                {
+                    Id = 1, Name = "Tower", Company = "Ubisoft", Price = 6.37f, Count = 5, Unit = "things",
+                    Author = "King", Genre = "Mystic", Year = 1999
+                });
+            storage.Add(2,
+                new HomeAppliances
+                {
+                    Id = 2, Name = "TV", Company = "Amazon", Price = 600.07f, Count = 7, Unit = "things", Type = "TV",
+                    Model = "GH_90", Description = "someshit"
+                });
         }
+
         public void Begin()
         {
             outputBuffer.Append(USAGE_TEXT);
             OutputResponse();
-            bool isRunning = true;
+            var isRunning = true;
             while (isRunning)
             {
                 OutputPrompt();
@@ -111,19 +133,20 @@ namespace GoodsHandbookMalchikovPavlov
                 OutputResponse();
             }
         }
+
         private void GatherUserInput()
         {
             Console.TreatControlCAsInput = true;
             inputBuffer.Length = 0;
-            int inputBufferIndex = 0;
-            int promptPrefixLength = promptPrefix.Length;
+            var inputBufferIndex = 0;
+            var promptPrefixLength = promptPrefix.Length;
             interruptedByCtrlCombination = false;
 
             while (true)
             {
-                ConsoleKeyInfo keyInfo = Console.ReadKey(true);
+                var keyInfo = Console.ReadKey(true);
 
-                bool printable = !Char.IsControl(keyInfo.KeyChar);
+                var printable = !char.IsControl(keyInfo.KeyChar);
 
                 if (keyInfo.Modifiers == ConsoleModifiers.Control)
                 {
@@ -132,50 +155,44 @@ namespace GoodsHandbookMalchikovPavlov
                     break;
                 }
 
-                else
+                if (keyInfo.Key == ConsoleKey.Enter) break;
+
+                if (keyInfo.Key == ConsoleKey.Backspace)
                 {
-
-                    if (keyInfo.Key == ConsoleKey.Enter)
+                    if (inputBufferIndex > 0)
                     {
-                        break;
-                    }
-                    else if (keyInfo.Key == ConsoleKey.Backspace)
-                    {
-                        if (inputBufferIndex > 0)
-                        {
-                            ClearPromptLine(inputBuffer.Length, promptPrefixLength);
-
-                            inputBufferIndex--;
-                            inputBuffer.Remove(inputBufferIndex, 1);
-
-                            Console.Write(inputBuffer.ToString());
-                            Console.SetCursorPosition(promptPrefixLength + inputBufferIndex, Console.CursorTop);
-                        }
-                    }
-                    else if (keyInfo.Key == ConsoleKey.LeftArrow)
-                    {
-                        if (inputBufferIndex > 0)
-                        {
-                            Console.SetCursorPosition(Console.CursorLeft - 1, Console.CursorTop);
-                            inputBufferIndex--;
-                        }
-                    }
-                    else if (keyInfo.Key == ConsoleKey.RightArrow)
-                    {
-                        if (inputBufferIndex < inputBuffer.Length)
-                        {
-                            Console.SetCursorPosition(Console.CursorLeft + 1, Console.CursorTop);
-                            inputBufferIndex++;
-                        }
-                    }
-                    else if (printable)
-                    {
-                        inputBuffer.Insert(inputBufferIndex++, keyInfo.KeyChar);
                         ClearPromptLine(inputBuffer.Length, promptPrefixLength);
+
+                        inputBufferIndex--;
+                        inputBuffer.Remove(inputBufferIndex, 1);
 
                         Console.Write(inputBuffer.ToString());
                         Console.SetCursorPosition(promptPrefixLength + inputBufferIndex, Console.CursorTop);
                     }
+                }
+                else if (keyInfo.Key == ConsoleKey.LeftArrow)
+                {
+                    if (inputBufferIndex > 0)
+                    {
+                        Console.SetCursorPosition(Console.CursorLeft - 1, Console.CursorTop);
+                        inputBufferIndex--;
+                    }
+                }
+                else if (keyInfo.Key == ConsoleKey.RightArrow)
+                {
+                    if (inputBufferIndex < inputBuffer.Length)
+                    {
+                        Console.SetCursorPosition(Console.CursorLeft + 1, Console.CursorTop);
+                        inputBufferIndex++;
+                    }
+                }
+                else if (printable)
+                {
+                    inputBuffer.Insert(inputBufferIndex++, keyInfo.KeyChar);
+                    ClearPromptLine(inputBuffer.Length, promptPrefixLength);
+
+                    Console.Write(inputBuffer.ToString());
+                    Console.SetCursorPosition(promptPrefixLength + inputBufferIndex, Console.CursorTop);
                 }
             }
         }
@@ -190,20 +207,14 @@ namespace GoodsHandbookMalchikovPavlov
 
         private void OutputResponse()
         {
-            string response = outputBuffer.ToString();
+            var response = outputBuffer.ToString();
             if (response.Length > 0)
             {
-                ConsoleColor stockColor = Console.BackgroundColor;
-                if (outputAttention)
-                {
-                    Console.BackgroundColor = ConsoleColor.Red;
-                }
+                var stockColor = Console.BackgroundColor;
+                if (outputAttention) Console.BackgroundColor = ConsoleColor.Red;
                 Console.SetCursorPosition(0, Console.CursorTop + 1);
                 Console.Write(response);
-                if (outputAttention)
-                {
-                    Console.BackgroundColor = stockColor;
-                }
+                if (outputAttention) Console.BackgroundColor = stockColor;
             }
         }
 
@@ -212,84 +223,55 @@ namespace GoodsHandbookMalchikovPavlov
             outputBuffer.Length = 0;
             outputAttention = false;
             if (!interruptedByCtrlCombination)
-            {
                 return ProcessInput();
-            }
-            else
-            {
-                return ProcessCtrlCombinations();
-            }
+            return ProcessCtrlCombinations();
         }
 
         private bool ProcessInput()
         {
-            if (attemptingToExit)
-            {
-                attemptingToExit = false;
-            }
-            if (activeCommand == Command.None)
-            {
-                ParseCommandAndArguments();
-            }
+            if (attemptingToExit) attemptingToExit = false;
+            if (activeCommand == Command.None) ParseCommandAndArguments();
             switch (activeCommand)
             {
                 case Command.None:
-                    {
-                        outputBuffer.Append(USAGE_TEXT);
-                    }
+                {
+                    outputBuffer.Append(USAGE_TEXT);
+                }
                     break;
                 case Command.Create:
-                    {
-                        if (ProcessCreateCommand())
-                        {
-                            activeCommand = Command.None;
-                        }
-                    }
+                {
+                    if (ProcessCreateCommand()) activeCommand = Command.None;
+                }
                     break;
                 case Command.List:
-                    {
-                        if (ProcessListCommand())
-                        {
-                            activeCommand = Command.None;
-                        }
-
-                    }
+                {
+                    if (ProcessListCommand()) activeCommand = Command.None;
+                }
                     break;
                 case Command.AddRange:
-                    {
-                        if (ProccessAddRange())
-                        {
-                            activeCommand = Command.None;
-                        }
-
-                    }
+                {
+                    if (ProccessAddRange()) activeCommand = Command.None;
+                }
                     break;
                 case Command.DeleteRange:
-                    {
-                        if (ProccessDeleteRange())
-                        {
-                            activeCommand = Command.None;
-                        }
-
-                    }
+                {
+                    if (ProccessDeleteRange()) activeCommand = Command.None;
+                }
                     break;
             }
+
             UpdatePromptPrefix();
             return false;
         }
 
         private bool ProcessCtrlCombinations()
         {
-            if ((keyPressedWithCtrl == ConsoleKey.Q))
+            if (keyPressedWithCtrl == ConsoleKey.Q)
             {
-                if (attemptingToExit)
-                {
-                    return true;
-                }
+                if (attemptingToExit) return true;
                 outputBuffer.Append("Exit? Press CTRL+Q again to exit\n");
                 outputAttention = true;
                 attemptingToExit = true;
-
             }
             else if (attemptingToExit)
             {
@@ -301,60 +283,54 @@ namespace GoodsHandbookMalchikovPavlov
 
         private void ParseCommandAndArguments()
         {
-            string[] args = inputBuffer.ToString().Split(' ', '\t');
+            var args = inputBuffer.ToString().Split(' ', '\t');
             if (args.Length > 0)
-            {
                 if (commandMap.ContainsKey(args[0]))
                 {
                     activeCommand = commandMap[args[0]];
                     switch (activeCommand)
                     {
                         case Command.None:
-                            {
-                                return;
-                            }
+                        {
+                            return;
+                        }
                         case Command.Create:
+                        {
+                            if (args.Length == 1)
                             {
-                                if (args.Length == 1)
+                            }
+                            else if (args.Length == 2)
+                            {
+                                if (nameToProductTypeMap.ContainsKey(args[1]))
                                 {
-                                    return;
-                                }
-                                else if (args.Length == 2)
-                                {
-                                    if (nameToProductTypeMap.ContainsKey(args[1]))
-                                    {
-                                        Type productType = nameToProductTypeMap[args[1]];
-                                        InitCreateCommand(productType);
-                                    }
-                                }
-                                else if (args.Length > 2)
-                                {
-                                    Debug.Assert(false);
+                                    var productType = nameToProductTypeMap[args[1]];
+                                    InitCreateCommand(productType);
                                 }
                             }
+                            else if (args.Length > 2)
+                            {
+                                Debug.Assert(false);
+                            }
+                        }
                             break;
                         case Command.List:
+                        {
+                            if (args.Length == 1)
                             {
-                                if (args.Length == 1)
-                                {
-                                    return;
-                                }
-                                else if (args.Length == 2)
-                                {
-                                    if (nameToProductTypeMap.ContainsKey(args[1]))
-                                    {
-                                        listProductType = nameToProductTypeMap[args[1]];
-                                    }
-                                }
-                                else if (args.Length > 2)
-                                {
-                                    Debug.Assert(false);
-                                }
                             }
+                            else if (args.Length == 2)
+                            {
+                                if (nameToProductTypeMap.ContainsKey(args[1]))
+                                    listProductType = nameToProductTypeMap[args[1]];
+                            }
+                            else if (args.Length > 2)
+                            {
+                                Debug.Assert(false);
+                            }
+                        }
                             break;
                     }
                 }
-            }
         }
 
         private bool ProcessCreateCommand()
@@ -363,40 +339,38 @@ namespace GoodsHandbookMalchikovPavlov
             {
                 if (createProductType == null)
                 {
-                    string arg = inputBuffer.ToString();
+                    var arg = inputBuffer.ToString();
                     if (nameToProductTypeMap.ContainsKey(arg))
                     {
-                        Type productType = nameToProductTypeMap[arg];
+                        var productType = nameToProductTypeMap[arg];
                         InitCreateCommand(productType);
-                        PropertyInfo info = createProductStuff.PropertyInfoArray[createPropertyIndex];
+                        var info = createProductStuff.PropertyInfoArray[createPropertyIndex];
 
                         if (Attribute.IsDefined(info, typeof(AutoIdAttribute)))
                         {
-                            int productId = GetFreeProductId(storage);
+                            var productId = GetFreeProductId(storage);
                             info.SetValue(createProduct, productId);
                             createPropertyIndex++;
-
                         }
+
                         OutputProductPropertyValueRequest(createProductType, createPropertyIndex);
                     }
                     else
                     {
                         OutputProductNameRequest();
                     }
-
                 }
                 else
                 {
-                    PropertyInfo info = createProductStuff.PropertyInfoArray[createPropertyIndex];
+                    var info = createProductStuff.PropertyInfoArray[createPropertyIndex];
 
-                    bool validateSuccess = createValidator.Validate(createProductType, info, inputBuffer.ToString());
+                    var validateSuccess = createValidator.Validate(createProductType, info, inputBuffer.ToString());
                     if (validateSuccess)
                     {
-                       
                         info.SetValue(createProduct, createValidator.GetLastProperty());
-                        
 
-                        if ((createPropertyIndex + 1) < createProductStuff.PropertyInfoArray.Length)
+
+                        if (createPropertyIndex + 1 < createProductStuff.PropertyInfoArray.Length)
                         {
                             createPropertyIndex++;
                         }
@@ -415,36 +389,31 @@ namespace GoodsHandbookMalchikovPavlov
                     }
                     else
                     {
-                        
                         outputBuffer.Append(createValidator.GetLastError());
                         outputAttention = true;
                     }
+
                     info = createProductStuff.PropertyInfoArray[createPropertyIndex];
                     if (Attribute.IsDefined(info, typeof(AutoIdAttribute)))
                     {
-                        int productId = GetFreeProductId(storage);
+                        var productId = GetFreeProductId(storage);
                         info.SetValue(createProduct, productId);
                         createPropertyIndex++;
-
                     }
+
                     OutputProductPropertyValueRequest(createProductType, createPropertyIndex);
                 }
             }
             else
             {
                 if (createProductType == null)
-                {
                     OutputProductNameRequest();
-                }
                 else
-                {
                     OutputProductPropertyValueRequest(createProductType, createPropertyIndex);
 
-                }
-
                 createInputRequested = true;
-
             }
+
             return false;
         }
 
@@ -454,7 +423,7 @@ namespace GoodsHandbookMalchikovPavlov
             {
                 if (listInputRequested)
                 {
-                    string arg = inputBuffer.ToString();
+                    var arg = inputBuffer.ToString();
                     if (nameToProductTypeMap.ContainsKey(arg))
                     {
                         listProductType = nameToProductTypeMap[arg];
@@ -463,64 +432,57 @@ namespace GoodsHandbookMalchikovPavlov
                         listInputRequested = false;
                         return true;
                     }
-                    else
-                    {
-                        outputBuffer.Append("Records of all Product types will be listed\n");
-                        MakeProductRecordsListString(storage, productMap, listProductType, outputBuffer);
-                        listProductType = null;
-                        listInputRequested = false;
-                        return true;
-                    }
+
+                    outputBuffer.Append("Records of all Product types will be listed\n");
+                    MakeProductRecordsListString(storage, productMap, listProductType, outputBuffer);
+                    listProductType = null;
+                    listInputRequested = false;
+                    return true;
                 }
-                else
-                {
-                    outputBuffer.Append("You can filter records by Product type name\n");
-                    OutputProductNameRequest();
-                    listInputRequested = true;
-                    return false;
-                }
+
+                outputBuffer.Append("You can filter records by Product type name\n");
+                OutputProductNameRequest();
+                listInputRequested = true;
+                return false;
             }
-            else
-            {
-                MakeProductRecordsListString(storage, productMap, listProductType, outputBuffer);
-                listProductType = null;
-                listInputRequested = false;
-                return true;
-            }
+
+            MakeProductRecordsListString(storage, productMap, listProductType, outputBuffer);
+            listProductType = null;
+            listInputRequested = false;
+            return true;
         }
 
         private bool ProccessAddRange()
         {
-                string[] arg = inputBuffer.ToString().Split(' ');
-                if (arg.Length == 2)
-                {
-                    var currentItem = this.storage[Convert.ToInt32(arg[0])]; 
-                    currentItem.Count += Convert.ToInt32(arg[1]); 
-                    outputBuffer.Append("Product has been successfully updated\n");
-                    outputBuffer.Append($"Product {currentItem.Name} (ID={currentItem.Id}) current amount is {currentItem.Count} \n");
-                    return true;
-                }
-                else
-                {
-                    OutputProductAddRangeRequest();
-                }
-            
+            var arg = inputBuffer.ToString().Split(' ');
+            if (arg.Length == 2)
+            {
+                var currentItem = storage[Convert.ToInt32(arg[0])];
+                currentItem.Count += Convert.ToInt32(arg[1]);
+                outputBuffer.Append("Product has been successfully updated\n");
+                outputBuffer.Append(
+                    $"Product {currentItem.Name} (ID={currentItem.Id}) current amount is {currentItem.Count} \n");
+                return true;
+            }
+
+            OutputProductAddRangeRequest();
+
             return false;
         }
 
         private bool ProccessDeleteRange()
         {
-            string[] arg = inputBuffer.ToString().Split(' ');
+            var arg = inputBuffer.ToString().Split(' ');
             if (arg.Length == 2)
             {
-                var currentItem = this.storage[Convert.ToInt32(arg[0])];
+                var currentItem = storage[Convert.ToInt32(arg[0])];
                 if (currentItem.Count < Convert.ToInt32(arg[1]))
                 {
                     OutputProductDeleteRangeRequest(currentItem.Count);
                 }
                 else
                 {
-                    currentItem.Count = currentItem.Count  -Convert.ToInt32(arg[1]);
+                    currentItem.Count = currentItem.Count - Convert.ToInt32(arg[1]);
                     outputBuffer.Append("Product has been successfully updated\n");
                     outputBuffer.Append(
                         $"Product {currentItem.Name} (ID={currentItem.Id}) current amount is {currentItem.Count} \n");
@@ -538,11 +500,12 @@ namespace GoodsHandbookMalchikovPavlov
         private void InitCreateCommand(Type productType)
         {
             createProductType = productType;
-            createProduct = (Product)Activator.CreateInstance(createProductType);
+            createProduct = (Product) Activator.CreateInstance(createProductType);
             createProductStuff = productMap[createProductType];
             createValidator = validatorMap[createProductType];
             createPropertyIndex = 0;
         }
+
         private void OutputProductNameRequest()
         {
             outputBuffer.Append("List of product type names:\n");
@@ -552,59 +515,57 @@ namespace GoodsHandbookMalchikovPavlov
                 outputBuffer.Append(pair.Key);
                 outputBuffer.Append("\n");
             }
+
             outputBuffer.Append("Enter product type name:");
         }
+
         private void OutputProductPropertyValueRequest(Type productType, int index)
         {
-            string name = productMap[productType].ProperPropertyNames[index]; 
+            var name = productMap[productType].ProperPropertyNames[index];
             outputBuffer.Append(string.Format("Enter Value for \"{0}\"\n", name));
         }
+
         private void OutputProductAddRangeRequest()
         {
             outputBuffer.Append("Enter Id product and count");
         }
+
         private void OutputProductDeleteRangeRequest(object currentCount = null)
         {
             if (currentCount == null)
-            {
                 outputBuffer.Append("Enter Id product and count to delete [123 10]");
-            }
             else
-            {
                 outputBuffer.Append($"Count to delete should be less than {currentCount}");
-            }
         }
+
         private void UpdatePromptPrefix()
         {
             if (activeCommand != Command.None)
-            {
-                promptPrefix = activeCommand.ToString() + ">";
-            }
+                promptPrefix = activeCommand + ">";
             else
-            {
                 promptPrefix = ">";
-            }
         }
-       
+
         private void ClearPromptLine(int lineLength, int prefixOffset)
         {
             Console.SetCursorPosition(prefixOffset, Console.CursorTop);
-            for (int i = 0; i < lineLength; i++)
+            for (var i = 0; i < lineLength; i++)
                 Console.Write(" ");
             Console.SetCursorPosition(prefixOffset, Console.CursorTop);
         }
+
         private static ProductCachedStuff CacheProductStuff(Type productType)
         {
             var propertyInfoArray = productType.GetProperties();
-           
-            string[] properPropertyNames = new string[propertyInfoArray.Length];
-            for (int i = 0; i < propertyInfoArray.Length; i++)
+
+            var properPropertyNames = new string[propertyInfoArray.Length];
+            for (var i = 0; i < propertyInfoArray.Length; i++)
             {
-                PropertyInfo info = propertyInfoArray[i];
+                var info = propertyInfoArray[i];
                 properPropertyNames[i] = ReflectionMisc.GetPropertyName(info);
             }
-         
-            ProductCachedStuff result = new ProductCachedStuff();
+
+            var result = new ProductCachedStuff();
             result.ProductName = ReflectionMisc.GetTypeName(productType);
             result.PropertyInfoArray = propertyInfoArray;
             result.ProperPropertyNames = properPropertyNames;
@@ -614,54 +575,53 @@ namespace GoodsHandbookMalchikovPavlov
         private static Dictionary<Type, ProductCachedStuff>
             CreateDictionaryOfCachedProductStuff(Type[] productTypes)
         {
-            Dictionary<Type, ProductCachedStuff> result = new Dictionary<Type, ProductCachedStuff>();
-            foreach (Type type in productTypes)
-            {
-                result.Add(type, CacheProductStuff(type));
-            }
+            var result = new Dictionary<Type, ProductCachedStuff>();
+            foreach (var type in productTypes) result.Add(type, CacheProductStuff(type));
             return result;
         }
 
-        private static void MakeProductPropertyString(Product product, PropertyInfo[] infoArray, string[] properNames, int index, StringBuilder buffer)
+        private static void MakeProductPropertyString(Product product, PropertyInfo[] infoArray, string[] properNames,
+            int index, StringBuilder buffer)
         {
-            PropertyInfo info = infoArray[index];
-            string name = properNames[index];
-            string value = info.GetValue(product).ToString();
+            var info = infoArray[index];
+            var name = properNames[index];
+            var value = info.GetValue(product).ToString();
             buffer.Append(string.Format("Name: \"{0}\" Value: {1}\n", name, value));
         }
+
         private static void MakeProductPropertyPromptString(PropertyInfo[] infoArray, int index, StringBuilder buffer)
         {
-            PropertyInfo info = infoArray[index];
-            string name = ReflectionMisc.GetPropertyName(info);
+            var info = infoArray[index];
+            var name = ReflectionMisc.GetPropertyName(info);
             buffer.Append(string.Format("Enter Value for \"{0}\"\n", name));
         }
-        private static void MakeProductRecordsListString(Dictionary<int, Product> products, Dictionary<Type, ProductCachedStuff> productCachedStuffDict, Type filterProduct, StringBuilder buffer)
+
+        private static void MakeProductRecordsListString(Dictionary<int, Product> products,
+            Dictionary<Type, ProductCachedStuff> productCachedStuffDict, Type filterProduct, StringBuilder buffer)
         {
             foreach (var pair in products)
             {
-                Type type = pair.Value.GetType();
+                var type = pair.Value.GetType();
                 if (filterProduct != null)
                 {
                     if (type.Equals(filterProduct))
                     {
                         Debug.Assert(productCachedStuffDict.ContainsKey(type));
-                        ProductCachedStuff cache = productCachedStuffDict[type];
-                        buffer.Append(String.Format("Product name: \"{0}\"\n", cache.ProductName));
-                        for (int i = 0; i < cache.PropertyInfoArray.Length; i++)
-                        {
-                            MakeProductPropertyString(pair.Value, cache.PropertyInfoArray, cache.ProperPropertyNames, i, buffer);
-                        }
+                        var cache = productCachedStuffDict[type];
+                        buffer.Append(string.Format("Product name: \"{0}\"\n", cache.ProductName));
+                        for (var i = 0; i < cache.PropertyInfoArray.Length; i++)
+                            MakeProductPropertyString(pair.Value, cache.PropertyInfoArray, cache.ProperPropertyNames, i,
+                                buffer);
                     }
                 }
                 else
                 {
                     Debug.Assert(productCachedStuffDict.ContainsKey(type));
-                    ProductCachedStuff cache = productCachedStuffDict[type];
-                    buffer.Append(String.Format("Product name: \"{0}\"\n", cache.ProductName));
-                    for (int i = 0; i < cache.PropertyInfoArray.Length; i++)
-                    {
-                        MakeProductPropertyString(pair.Value, cache.PropertyInfoArray, cache.ProperPropertyNames, i, buffer);
-                    }
+                    var cache = productCachedStuffDict[type];
+                    buffer.Append(string.Format("Product name: \"{0}\"\n", cache.ProductName));
+                    for (var i = 0; i < cache.PropertyInfoArray.Length; i++)
+                        MakeProductPropertyString(pair.Value, cache.PropertyInfoArray, cache.ProperPropertyNames, i,
+                            buffer);
                 }
             }
         }
@@ -691,6 +651,5 @@ namespace GoodsHandbookMalchikovPavlov
             }
         }
 #endif
-
     }
 }

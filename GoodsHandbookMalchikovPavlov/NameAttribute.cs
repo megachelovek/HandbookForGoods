@@ -1,17 +1,15 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace GoodsHandbookMalchikovPavlov
 {
     [AttributeUsage(AttributeTargets.Property | AttributeTargets.Class)]
-    class NameAttribute : Attribute
+    internal class NameAttribute : Attribute
     {
-        private string name;
         public NameAttribute(string name)
         {
-            this.name = name;
+            Name = name;
         }
-        public string Name { get { return name; } }
+
+        public string Name { get; }
     }
 }

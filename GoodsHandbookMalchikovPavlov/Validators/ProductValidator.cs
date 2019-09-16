@@ -1,18 +1,18 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 using System.Reflection;
+using System.Text;
 
 namespace GoodsHandbookMalchikovPavlov.Validators
 {
-    abstract class ProductValidator
+    internal abstract class ProductValidator
     {
-        protected object lastProperty;
         protected string lastError;
+        protected object lastProperty;
         protected StringBuilder outputBuffer = new StringBuilder();
+
         public virtual bool Validate(Type productType, PropertyInfo info, string value)
         {
-            bool result = BasicTypesValidator.Validate(info.PropertyType, value, out lastProperty, out lastError);
+            var result = BasicTypesValidator.Validate(info.PropertyType, value, out lastProperty, out lastError);
             return result;
         }
 
@@ -20,6 +20,7 @@ namespace GoodsHandbookMalchikovPavlov.Validators
         {
             return lastProperty;
         }
+
         public string GetLastError()
         {
             return lastError;

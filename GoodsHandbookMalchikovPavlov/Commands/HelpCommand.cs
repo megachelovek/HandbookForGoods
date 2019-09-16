@@ -4,7 +4,7 @@ using System.Text;
 
 namespace GoodsHandbookMalchikovPavlov
 {
-    sealed class HelpCommand : ICommand
+    internal sealed class HelpCommand : ICommand
     {
         private const string NAME = "help";
 
@@ -18,18 +18,18 @@ namespace GoodsHandbookMalchikovPavlov
         {
             this.commandMap = commandMap;
         }
-       
+
         public bool ProcessInput(string input, out string output, out bool attention)
         {
             attention = false;
-            List<StringPos> positions = Misc.GetWords(input);
+            var positions = Misc.GetWords(input);
 
             if (positions.Count == 2)
             {
-                StringPos pos = positions[1];
-                foreach (KeyValuePair<string, ICommand> pair in commandMap)
+                var pos = positions[1];
+                foreach (var pair in commandMap)
                 {
-                    string commandName = pair.Key;
+                    var commandName = pair.Key;
                     if (Misc.StringsEqual(input, pos.begin, pos.end, commandName, 0, commandName.Length - 1))
                     {
                         output = pair.Value.GetCommandUsageText();
@@ -37,31 +37,36 @@ namespace GoodsHandbookMalchikovPavlov
                     }
                 }
             }
+
             output = GetCommandUsageText();
 
             return true;
         }
+
         public bool ProcessCtrlCombinations(ConsoleKeyInfo keyInfo, out string output, out bool attention)
         {
             attention = false;
             output = "";
             return true;
         }
+
         public string GetCommandName()
         {
             return NAME;
         }
+
         public string GetCommandUsageText()
         {
-            StringBuilder buffer = new StringBuilder(USAGE.Length);
+            var buffer = new StringBuilder(USAGE.Length);
             buffer.Append(USAGE);
             buffer.Append("\nAvailable commands:\n");
-            foreach (KeyValuePair<string, ICommand> pair in commandMap)
+            foreach (var pair in commandMap)
             {
-                string commandName = pair.Key;
+                var commandName = pair.Key;
                 buffer.Append(commandName);
                 buffer.Append("\n");
             }
+
             return buffer.ToString();
         }
 

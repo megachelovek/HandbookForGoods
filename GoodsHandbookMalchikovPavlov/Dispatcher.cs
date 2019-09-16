@@ -1,14 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using GoodsHandbookMalchikovPavlov.Model;
 using GoodsHandbookMalchikovPavlov.Commands;
+using GoodsHandbookMalchikovPavlov.Model;
 using GoodsHandbookMalchikovPavlov.Validators;
+
 namespace GoodsHandbookMalchikovPavlov
 {
-    sealed class Dispatcher
+    internal sealed class Dispatcher
     {
-
         private static readonly string USAGE =
             "Program can be used to create, edit and view products information\n" +
             "Usage: This is an interactive kind of program. Type any command name listed below\n" +
@@ -17,14 +17,15 @@ namespace GoodsHandbookMalchikovPavlov
             "list                - to list product records\n" +
             "help [command name] - to get detailed information about a given command if applicable\n";
 
-        private List<Product> storage;
         private readonly Dictionary<string, ICommand> commandMap;
         private readonly Dictionary<string, Type> nameToProductMap;
         private readonly Dictionary<Type, ProductValidator> productToValidatorMap;
+        private ICommand activeCommand;
 
-        private bool attemptingToExit = false;
-        private ICommand activeCommand = null;
-        private int prefixOffset = 0;
+        private bool attemptingToExit;
+        private int prefixOffset;
+
+        private readonly List<Product> storage;
 
         public Dispatcher()
         {
@@ -32,8 +33,8 @@ namespace GoodsHandbookMalchikovPavlov
             nameToProductMap = new Dictionary<string, Type>();
             productToValidatorMap = new Dictionary<Type, ProductValidator>();
 
-            Type productType = typeof(Toy);
-            string productName = ReflectionMisc.GetTypeName(productType);
+            var productType = typeof(Toy);
+            var productName = ReflectionMisc.GetTypeName(productType);
             nameToProductMap.Add(productName, productType);
             productToValidatorMap.Add(productType, new ToyValidator());
 
@@ -50,51 +51,43 @@ namespace GoodsHandbookMalchikovPavlov
             commandMap = new Dictionary<string, ICommand>();
             commandMap.Add(ListCommand.GetName(), new ListCommand(storage));
             commandMap.Add(HelpCommand.GetName(), new HelpCommand(commandMap));
-            commandMap.Add(CreateCommand.GetName(), new CreateCommand(storage, nameToProductMap, productToValidatorMap));
-
-            
+            commandMap.Add(CreateCommand.GetName(),
+                new CreateCommand(storage, nameToProductMap, productToValidatorMap));
         }
+
         public void Start()
         {
             Console.TreatControlCAsInput = true;
 
-            StringBuilder buffer = new StringBuilder();
-            int bufferIndex = 0;
-            bool attention = false;
+            var buffer = new StringBuilder();
+            var bufferIndex = 0;
+            var attention = false;
             PrintResponse(USAGE, false);
             PrintPrompt();
             while (true)
             {
-                ConsoleKeyInfo keyInfo = Console.ReadKey(true);
+                var keyInfo = Console.ReadKey(true);
 
-                bool printable = !Char.IsControl(keyInfo.KeyChar);
-                
+                var printable = !char.IsControl(keyInfo.KeyChar);
+
                 if (keyInfo.Modifiers == ConsoleModifiers.Control)
                 {
                     string output;
-                    if (ProcessCtrlCombinations(keyInfo, out output, out attention))
-                    {
-                        break;
-                    }
+                    if (ProcessCtrlCombinations(keyInfo, out output, out attention)) break;
                     PrintResponse(output, attention);
                     PrintPrompt();
                 }
-                
+
                 else
                 {
-                    
                     if (keyInfo.Key == ConsoleKey.Enter)
                     {
                         string output;
-                        if (ProcessInput(buffer.ToString(), out output, out attention))
-                        {
-                            break;
-                        }
+                        if (ProcessInput(buffer.ToString(), out output, out attention)) break;
                         PrintResponse(output, attention);
                         PrintPrompt();
                         buffer.Length = 0;
                         bufferIndex = 0;
-                     
                     }
                     else if (keyInfo.Key == ConsoleKey.Backspace)
                     {
@@ -104,7 +97,7 @@ namespace GoodsHandbookMalchikovPavlov
 
                             bufferIndex--;
                             buffer.Remove(bufferIndex, 1);
-                            
+
                             Console.Write(buffer.ToString());
                             Console.SetCursorPosition(prefixOffset + bufferIndex, Console.CursorTop);
                         }
@@ -141,21 +134,11 @@ namespace GoodsHandbookMalchikovPavlov
         {
             attention = false;
             output = "";
-            if (attemptingToExit)
-            {
-                attemptingToExit = false;
-            }
-            if (activeCommand == null)
-            {
-                activeCommand = ParseCommandName(input);
-            }
+            if (attemptingToExit) attemptingToExit = false;
+            if (activeCommand == null) activeCommand = ParseCommandName(input);
             if (activeCommand != null)
-            {
                 if (activeCommand.ProcessInput(input, out output, out attention))
-                {
                     activeCommand = null;
-                }
-            }
             return false;
         }
 
@@ -166,53 +149,42 @@ namespace GoodsHandbookMalchikovPavlov
 
             if (activeCommand != null)
             {
-                if (activeCommand.ProcessCtrlCombinations(keyInfo, out output, out attention))
-                {
-                    activeCommand = null;
-                }
+                if (activeCommand.ProcessCtrlCombinations(keyInfo, out output, out attention)) activeCommand = null;
             }
             else
             {
-                if ((keyInfo.Key == ConsoleKey.Q))
+                if (keyInfo.Key == ConsoleKey.Q)
                 {
-                    if (attemptingToExit)
-                    {
-                        return true;
-                    }
+                    if (attemptingToExit) return true;
                     output = "Exit? Press CTRL+Q again to exit";
                     attention = true;
                     attemptingToExit = true;
-
                 }
                 else if (attemptingToExit)
                 {
                     attemptingToExit = false;
                 }
             }
+
             return false;
         }
+
         private void ClearPromptLine(int lineLength)
         {
             Console.SetCursorPosition(prefixOffset, Console.CursorTop);
-            for (int i = 0; i < lineLength; i++)
+            for (var i = 0; i < lineLength; i++)
                 Console.Write(" ");
             Console.SetCursorPosition(prefixOffset, Console.CursorTop);
         }
-        
+
         private void PrintResponse(string response, bool attention)
         {
             if (response.Length > 0)
             {
-                if (attention)
-                {
-                    Console.BackgroundColor = ConsoleColor.Red;
-                }
+                if (attention) Console.BackgroundColor = ConsoleColor.Red;
                 Console.SetCursorPosition(0, Console.CursorTop + 1);
                 Console.Write(response);
-                if (attention)
-                {
-                    Console.BackgroundColor = ConsoleColor.Black;
-                }
+                if (attention) Console.BackgroundColor = ConsoleColor.Black;
             }
         }
 
@@ -220,33 +192,26 @@ namespace GoodsHandbookMalchikovPavlov
         {
             Console.ForegroundColor = ConsoleColor.Green;
             Console.SetCursorPosition(0, Console.CursorTop + 1);
-            string prefix = "";
-            if (activeCommand != null)
-            {
-                prefix = activeCommand.GetCommandName();
-            }
+            var prefix = "";
+            if (activeCommand != null) prefix = activeCommand.GetCommandName();
             prefix += ">";
             Console.Write(prefix);
             prefixOffset = prefix.Length;
             Console.ForegroundColor = ConsoleColor.Gray;
-
         }
+
         private ICommand ParseCommandName(string input)
         {
-           
-            StringPos pos = Misc.GetWordPos(input, 0, input.Length - 1);
-            
-            foreach(KeyValuePair<string, ICommand> pair in commandMap)
+            var pos = Misc.GetWordPos(input, 0, input.Length - 1);
+
+            foreach (var pair in commandMap)
             {
-                string commandName = pair.Key;
+                var commandName = pair.Key;
                 if (Misc.StringsEqual(input, pos.begin, pos.end, commandName, 0, commandName.Length - 1))
-                {
                     return pair.Value;
-                }
             }
 
             return null;
         }
-        
     }
 }
