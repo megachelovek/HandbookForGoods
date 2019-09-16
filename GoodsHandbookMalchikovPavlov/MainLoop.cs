@@ -94,8 +94,8 @@ namespace GoodsHandbookMalchikovPavlov
             productMap = CreateDictionaryOfCachedProductStuff(productTypes);
 
             storage.Add(0, new Toy { Id = 0, Name = "Barby", Company = "Microsoft", Price = 0.07f, Count = 0, Unit = "things",  StartAge = 0, EndAge = 12, Sex = "Male", Type = "Doll" });
-            storage.Add(0, new Book { Id = 1, Name = "Tower", Company = "Ubisoft", Price = 6.37f, Count = 5, Unit = "things",  Author = "King", Genre = "Mystic", Year = 1999 });
-            storage.Add(0, new HomeAppliances { Id = 2, Name = "TV", Company = "Amazon", Price = 600.07f, Count = 7, Unit = "things", Type = "TV", Model = "GH_90", Description = "someshit" });
+            storage.Add(1, new Book { Id = 1, Name = "Tower", Company = "Ubisoft", Price = 6.37f, Count = 5, Unit = "things",  Author = "King", Genre = "Mystic", Year = 1999 });
+            storage.Add(2, new HomeAppliances { Id = 2, Name = "TV", Company = "Amazon", Price = 600.07f, Count = 7, Unit = "things", Type = "TV", Model = "GH_90", Description = "someshit" });
 
         }
         public void Begin()
@@ -494,11 +494,10 @@ namespace GoodsHandbookMalchikovPavlov
                 string[] arg = inputBuffer.ToString().Split(' ');
                 if (arg.Length == 2)
                 {
-                    var currentItem = this.storage[Convert.ToInt32(arg[0])]; // <= Ошибка получения 
-                    currentItem.Count = Convert.ToInt32(arg[1]); 
-                    OutputProductPropertyValueRequest(createProductType, createPropertyIndex);
-                    outputBuffer.Append("Product has been successfully updated");
-                    outputBuffer.Append($"Product {currentItem.Name} current count is {currentItem.Count}");
+                    var currentItem = this.storage[Convert.ToInt32(arg[0])]; 
+                    currentItem.Count += Convert.ToInt32(arg[1]); 
+                    outputBuffer.Append("Product has been successfully updated\n");
+                    outputBuffer.Append($"Product {currentItem.Name} (ID={currentItem.Id}) current amount is {currentItem.Count} \n");
                     return true;
                 }
                 else
@@ -511,28 +510,28 @@ namespace GoodsHandbookMalchikovPavlov
 
         private bool ProccessDeleteRange()
         {
-                string[] arg = inputBuffer.ToString().Split(' ');
-                if (arg.Length == 2)
+            string[] arg = inputBuffer.ToString().Split(' ');
+            if (arg.Length == 2)
+            {
+                var currentItem = this.storage[Convert.ToInt32(arg[0])];
+                if (currentItem.Count < Convert.ToInt32(arg[1]))
                 {
-                    var currentItem = this.storage[Convert.ToInt32(arg[0])];
-                    if (currentItem.Count < Convert.ToInt32(arg[1]))
-                    {
-                        OutputProductDeleteRangeRequest(Convert.ToInt32(arg[1]));
-                    }
-                    else
-                    {
-                        currentItem.Count = currentItem.Count - Convert.ToInt32(arg[1]);
-                        OutputProductPropertyValueRequest(createProductType, createPropertyIndex);
-                        outputBuffer.Append("Product has been successfully updated");
-                        outputBuffer.Append($"Product {currentItem.Name} current count is {currentItem.Count}");
-                        return true;
-                    }
+                    OutputProductDeleteRangeRequest(currentItem.Count);
                 }
                 else
                 {
-                    OutputProductDeleteRangeRequest();
+                    currentItem.Count = currentItem.Count  -Convert.ToInt32(arg[1]);
+                    outputBuffer.Append("Product has been successfully updated\n");
+                    outputBuffer.Append(
+                        $"Product {currentItem.Name} (ID={currentItem.Id}) current amount is {currentItem.Count} \n");
+                    return true;
                 }
-            
+            }
+            else
+            {
+                OutputProductDeleteRangeRequest();
+            }
+
             return false;
         }
 
@@ -566,7 +565,7 @@ namespace GoodsHandbookMalchikovPavlov
         }
         private void OutputProductDeleteRangeRequest(object currentCount = null)
         {
-            if (currentCount != null)
+            if (currentCount == null)
             {
                 outputBuffer.Append("Enter Id product and count to delete [123 10]");
             }
