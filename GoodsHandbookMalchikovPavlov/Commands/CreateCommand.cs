@@ -1,181 +1,201 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Reflection;
 using System.Text;
-using GoodsHandbookMalchikovPavlov.Model;
+using System.Reflection;
+using GoodsHandbookMalchikovPavlov.Models;
 using GoodsHandbookMalchikovPavlov.Validators;
-
 namespace GoodsHandbookMalchikovPavlov.Commands
 {
     internal sealed class CreateCommand : ICommand
     {
-        private const string NAME = "create";
-
-        private const string USAGE =
-            "create command is designed to be used in interactive fashion so just follow what it's saying";
-
-        private readonly Dictionary<string, Type> nameToProductMap;
-        private readonly Dictionary<Type, ProductValidator> productToValidatorMap;
-        private bool attemptingToExit;
-        private bool inputRequested;
-        private readonly StringBuilder outputBuffer = new StringBuilder();
+        private readonly string productTypeInputRequest =
+            "Enter \"product type\"";
+        private readonly string productPropertyInputRequest =
+            "Enter \"{0}\"";
+        private readonly string productTypeDoesntExist =
+            "Product type \"{0}\" does not exist" + Environment.NewLine +
+            "List of available product types:" + Environment.NewLine;
+        private StringBuilder responseBuffer = new StringBuilder();
+        private bool firstTimeThrough = true;
+        private bool initialized = false;
+        private bool inputRequested = false;
         private Product product;
-        private string productName;
-        private Type productType;
+        private PropertyInfo[] productProperties;
         private int propertyIndex;
-        private PropertyInfo[] propertyInfos;
-        private bool sessionStarted;
-        private readonly List<Product> storage;
         private ProductValidator validator;
-
-        public CreateCommand(List<Product> storage, Dictionary<string, Type> nameToProductMap,
-            Dictionary<Type, ProductValidator> productToValidatorMap)
+        private IProductCatalog productCatalog;
+        public CreateCommand(IProductCatalog productCatalog)
         {
-            this.storage = storage;
-            this.nameToProductMap = nameToProductMap;
-            this.productToValidatorMap = productToValidatorMap;
-        }
-
-        public bool ProcessInput(string input, out string output, out bool attention)
-        {
-            attention = false;
-            outputBuffer.Length = 0;
-            if (attemptingToExit) attemptingToExit = false;
-
-            if (!sessionStarted)
+            this.productCatalog = productCatalog;
+            validator = productCatalog.GetProductValidator();
+            StringBuilder buffer = new StringBuilder(64);
+            buffer.Append(productTypeDoesntExist);
+            string[] names = productCatalog.GetProductTypeNames();
+            foreach (var name in names)
             {
-                if (!input.Equals(NAME))
-                {
-                    output = GetCommandUsageText();
-                    return true;
-                }
-
-                sessionStarted = true;
+                buffer.Append("-");
+                buffer.Append(name);
+                buffer.Append(Environment.NewLine);
             }
-
-            if (productType == null)
+            productTypeDoesntExist = buffer.ToString();
+        }
+        public CommandReturnCode Process(string input)
+        {
+            responseBuffer.Length = 0;
+            string[] args = InputParser.GetWords(input);
+            if (firstTimeThrough)
             {
-                if (inputRequested && nameToProductMap.ContainsKey(input))
+                return HandleFirstTimeThrough(args);
+            }
+            if (inputRequested)
+            {
+                if (Quit(args))
                 {
-                    productType = nameToProductMap[input];
-                    propertyInfos = productType.GetProperties();
-                    propertyIndex = 0;
-                    product = (Product) Activator.CreateInstance(productType);
-                    productName = ReflectionMisc.GetTypeName(productType);
-                    validator = productToValidatorMap[productType];
-                    AppendPropertyRequest();
+                    Reset();
+                    return CommandReturnCode.Done;
                 }
-                else
+                if (Update(input))
                 {
-                    AppendProductNameRequest();
-                    inputRequested = true;
+                    Reset();
+                    return CommandReturnCode.Done;
+                }
+            }
+            SkipId();
+            RequestInput();
+            return CommandReturnCode.Undone;
+        }
+        public string GetLastResponse()
+        {
+            return responseBuffer.ToString();
+        }
+        private CommandReturnCode HandleFirstTimeThrough(string[] args)
+        {
+            bool success = false;
+            if (args.Length == 1)
+            {
+                if (args[0].Equals("create", StringComparison.OrdinalIgnoreCase))
+                {
+                    success = true;
+                }
+            }
+            else if (args.Length == 2)
+            {
+                if (args[0].Equals("create", StringComparison.OrdinalIgnoreCase))
+                {
+                    if (Init(args[1]))
+                    {
+                        success = true;
+                    }
+                    else
+                    {
+                        responseBuffer.Append(string.Format(productTypeDoesntExist, args[1]));
+                    }
+                }
+            }
+            if (success)
+            {
+                firstTimeThrough = false;
+                SkipId();
+                RequestInput();
+                return CommandReturnCode.Undone;
+            }
+            return CommandReturnCode.Done;
+        }
+        private bool Init(string productTypeName)
+        {
+            try
+            {
+                product = productCatalog.GetProduct(productTypeName);
+            }
+            catch (ArgumentException)
+            {
+                return false;
+            }
+            Type productType = product.GetType();
+            productProperties = productType.GetProperties();
+            Misc.SortProperties(productProperties, productType);
+            propertyIndex = 0;
+            initialized = true;
+            return true;
+        }
+        private void SkipId()
+        {
+            if (initialized)
+            {
+                if (productProperties[propertyIndex].Name.Equals("Id"))
+                {
+                    if ((propertyIndex + 1) < productProperties.Length)
+                    {
+                        propertyIndex++;
+                    }
+                }
+            }
+        }
+        private void RequestInput()
+        {
+            if (!initialized)
+            {
+                responseBuffer.Append(productTypeInputRequest);
+            }
+            else
+            {
+                string propertyName = Misc.GetPropertyName(productProperties[propertyIndex]);
+                responseBuffer.Append(string.Format(productPropertyInputRequest, propertyName));
+            }
+            inputRequested = true;
+        }
+        private bool Quit(string[] args)
+        {
+            if (args.Length == 1 && args[0].Equals("quit", StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+            return false;
+        }
+        private void Reset()
+        {
+            firstTimeThrough = true;
+            initialized = false;
+            inputRequested = false;
+            product = null;
+            productProperties = null;
+            propertyIndex = 0;
+        }
+        private bool Update(string input)
+        {
+            if (!initialized)
+            {
+                string[] args = InputParser.GetWords(input);
+                if (args.Length == 1)
+                {
+                    if (!Init(args[0]))
+                    {
+                        responseBuffer.Append(string.Format(productTypeDoesntExist, args[0]));
+                    }
                 }
             }
             else
             {
-                var info = propertyInfos[propertyIndex];
-                if (validator.Validate(productType, info, input))
+                PropertyInfo info = productProperties[propertyIndex];
+                bool isValid = validator.Validate(product, info, input);
+                if (isValid)
                 {
-                    info.SetValue(product, validator.GetLastProperty());
-
-                    if (propertyIndex + 1 < propertyInfos.Length)
+                    info.SetValue(product, validator.GetLastConvertedValue());
+                    if ((propertyIndex + 1) < productProperties.Length)
                     {
                         propertyIndex++;
                     }
                     else
                     {
-                        storage.Add(product);
-                        product = null;
-                        productType = null;
-                        propertyIndex = 0;
-                        propertyInfos = null;
-
-                        sessionStarted = false;
-                        inputRequested = false;
-                        outputBuffer.Append("Product has been successfully created");
-                        output = outputBuffer.ToString();
+                        productCatalog.AddProduct(product);
                         return true;
                     }
                 }
                 else
                 {
-                    outputBuffer.Append(validator.GetLastError());
-                    attention = true;
+                    responseBuffer.Append(validator.GetLastErrorMessage());
                 }
-
-                AppendPropertyRequest();
             }
-
-            output = outputBuffer.ToString();
             return false;
-        }
-
-        public bool ProcessCtrlCombinations(ConsoleKeyInfo keyInfo, out string output, out bool attention)
-        {
-            attention = false;
-            output = "";
-            if (keyInfo.Key == ConsoleKey.Q)
-            {
-                if (attemptingToExit)
-                {
-                    product = null;
-                    productType = null;
-                    propertyIndex = 0;
-                    propertyInfos = null;
-
-                    sessionStarted = false;
-                    inputRequested = false;
-                    return true;
-                }
-
-                output = "Go back? Confirm action by pressing CTRL+Q again";
-                attention = true;
-                attemptingToExit = true;
-            }
-            else if (attemptingToExit)
-            {
-                attemptingToExit = false;
-            }
-
-            return false;
-        }
-
-        public string GetCommandName()
-        {
-            return NAME;
-        }
-
-        public string GetCommandUsageText()
-        {
-            return USAGE;
-        }
-
-        private void AppendProductNameRequest()
-        {
-            outputBuffer.Append("List of product names:\n");
-            foreach (var pair in nameToProductMap)
-            {
-                outputBuffer.Append("- ");
-                outputBuffer.Append(pair.Key);
-                outputBuffer.Append("\n");
-            }
-
-            outputBuffer.Append("Enter product name:");
-        }
-
-        private void AppendPropertyRequest()
-        {
-            var info = propertyInfos[propertyIndex];
-            var name = ReflectionMisc.GetPropertyName(info);
-
-            outputBuffer.Append(string.Format(
-                "Enter value for the property \"{0}\" ( {1} out of {2} total properties of product \"{3}\" )", name,
-                propertyIndex + 1, propertyInfos.Length, productName));
-        }
-
-        public static string GetName()
-        {
-            return NAME;
         }
     }
 }

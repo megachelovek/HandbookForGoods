@@ -1,74 +1,132 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using GoodsHandbookMalchikovPavlov.Model;
+using System.Reflection;
+using System.Diagnostics;
+using GoodsHandbookMalchikovPavlov.Models;
 
-namespace GoodsHandbookMalchikovPavlov
+namespace GoodsHandbookMalchikovPavlov.Commands
 {
     internal sealed class ListCommand : ICommand
     {
-        private const string NAME = "list";
-        private const string USAGE = "no usage instructions yet, sorry...";
-        private readonly StringBuilder outputBuffer = new StringBuilder();
-        private readonly List<Product> storage;
-
-        public ListCommand(List<Product> storage)
+        private readonly string Usage =
+            "list [product type] [-full]" + Environment.NewLine;
+        private readonly string ProductTypeDoesntExist =
+            "Product type \"{0}\" does not exist" + Environment.NewLine +
+            "List of available product types:" + Environment.NewLine;
+        private StringBuilder responseBuffer = new StringBuilder();
+        private IProductCatalog productCatalog;
+        public ListCommand(IProductCatalog productCatalog)
         {
-            this.storage = storage;
-        }
-
-        public bool ProcessInput(string input, out string output, out bool attention)
-        {
-            outputBuffer.Length = 0;
-            if (input.Equals(NAME))
+            this.productCatalog = productCatalog;
+            StringBuilder buffer = new StringBuilder(64);
+            buffer.Append(ProductTypeDoesntExist);
+            string[] names = productCatalog.GetProductTypeNames();
+            foreach (var name in names)
             {
-                outputBuffer.Append("List of stored product records:\n");
-                foreach (var product in storage)
+                buffer.Append("-");
+                buffer.Append(name);
+                buffer.Append(Environment.NewLine);
+            }
+            ProductTypeDoesntExist = buffer.ToString();
+        }
+        public CommandReturnCode Process(string input)
+        {
+            responseBuffer.Length = 0;
+            string[] args = InputParser.GetWords(input);
+            if (args.Length == 1)
+            {
+                Debug.Assert(args[0].Equals("list", StringComparison.OrdinalIgnoreCase));
+                IList<Product> products = productCatalog.GetProducts();
+                ListBrief(products);
+            }
+            else if (args.Length == 2)
+            {
+                Debug.Assert(args[0].Equals("list", StringComparison.OrdinalIgnoreCase));
+                if (args[1].Equals("-full"))
                 {
-                    var productType = product.GetType();
-                    var productName = ReflectionMisc.GetTypeName(productType);
-
-                    outputBuffer.Append(string.Format("Product name: \"{0}\"\n", productName));
-                    foreach (var info in productType.GetProperties())
+                    IList<Product> products = productCatalog.GetProducts();
+                    ListFull(products);
+                }
+                else
+                {
+                    try
                     {
-                        var name = ReflectionMisc.GetPropertyName(info);
-                        outputBuffer.Append(string.Format("Property name: \"{0}\" ", name));
-                        var value = info.GetValue(product);
-                        string valueAsString;
-                        if (info.PropertyType.Equals(typeof(string)))
-                            valueAsString = (string) value;
-                        else
-                            valueAsString = value.ToString();
-                        outputBuffer.Append(string.Format("Property value: \"{0}\"\n", valueAsString));
+                        IList<Product> products = productCatalog.GetProducts(args[1]);
+                        ListBrief(products);
                     }
-
-                    outputBuffer.Append("\n");
+                    catch (ArgumentException)
+                    {
+                        responseBuffer.Append(string.Format(ProductTypeDoesntExist, args[1]));
+                    }
                 }
             }
-
-            output = outputBuffer.ToString();
-            attention = false;
-            return true;
+            else if (args.Length == 3)
+            {
+                Debug.Assert(args[0].Equals("list", StringComparison.OrdinalIgnoreCase));
+                if (args[2].Equals("-full"))
+                {
+                        try
+                        {
+                            IList<Product> products = productCatalog.GetProducts(args[1]);
+                            ListFull(products);
+                        }
+                        catch (ArgumentException)
+                        {
+                            responseBuffer.Append(string.Format(ProductTypeDoesntExist, args[1]));
+                        }
+                }
+                else
+                {
+                    responseBuffer.Append(Usage);
+                }
+            }
+            else
+            {
+                responseBuffer.Append(Usage);
+            }
+            return CommandReturnCode.Done;
+        }
+        public string GetLastResponse()
+        {
+            return responseBuffer.ToString();
         }
 
-        public bool ProcessCtrlCombinations(ConsoleKeyInfo keyInfo, out string output, out bool attention)
+        private void ListBrief(IList<Product> products)
         {
-            throw new NotImplementedException();
+            if (products.Count > 0)
+            {
+                responseBuffer.Append("List of products:");
+                responseBuffer.Append(Environment.NewLine);
+                foreach (var p in products)
+                {
+                    Type productType = p.GetType();
+                    PropertyInfo info = productType.GetProperty("Id");
+                    responseBuffer.Append(string.Format("Id - {0,-5} Type - {1,-15} Name - {2}", info.GetValue(p), Misc.GetTypeName(productType), p.Name));
+                    responseBuffer.Append(Environment.NewLine);
+                }
+            }
         }
-
-        public string GetCommandName()
+        private void ListFull(IList<Product> products)
         {
-            return NAME;
-        }
-
-        public string GetCommandUsageText()
-        {
-            return USAGE;
-        }
-
-        public static string GetName()
-        {
-            return NAME;
+            if (products.Count > 0)
+            {
+                responseBuffer.Append("List of products:");
+                responseBuffer.Append(Environment.NewLine);
+                foreach (var p in products)
+                {
+                    Type productType = p.GetType();
+                    responseBuffer.Append(Misc.GetTypeName(productType));
+                    responseBuffer.Append(Environment.NewLine);
+                    PropertyInfo[] properties = productType.GetProperties();
+                    Misc.SortProperties(properties, productType);
+                    foreach (var prop in properties)
+                    {
+                        responseBuffer.Append(string.Format("\t{0,-15} - {1,-20}", Misc.GetPropertyName(prop), prop.GetValue(p).ToString()));
+                        responseBuffer.Append(Environment.NewLine);
+                    }
+                }
+            }
         }
     }
 }

@@ -1,90 +1,118 @@
-﻿using System.Collections.Generic;
-
+﻿using System;
+using System.Reflection;
 namespace GoodsHandbookMalchikovPavlov
 {
-    internal struct StringPos
-    {
-        public int begin;
-        public int end;
-    }
-
     internal static class Misc
     {
-        public static bool StringsEqual(string first, int firstBegin, int firstEnd, string second, int secondBegin,
-            int secondEnd)
+        private static void Merge(int[] arr, int p, int q, int r, Array satelliteData)
         {
-            if (!(firstBegin >= 0 && firstBegin < first.Length)) return false;
-            if (!(firstEnd < first.Length)) return false;
-            if (!(secondBegin >= 0 && secondBegin < second.Length)) return false;
-            if (!(secondEnd < second.Length)) return false;
-
-            var firstLength = firstEnd - firstBegin + 1;
-            var secondLength = secondEnd - secondBegin + 1;
-
-            if (firstLength > 0 && firstLength == secondLength)
+            int n1 = q - p + 1;
+            int n2 = r - q;
+            int[] lArr = new int[n1 + 1];
+            int[] rArr = new int[n2 + 1];
+            Array lSatArr = Array.CreateInstance(satelliteData.GetValue(0).GetType(), n1);
+            Array rSatArr = Array.CreateInstance(satelliteData.GetValue(0).GetType(), n2);
+            int i = 0, j = 0;
+            for (; i < n1; i++)
             {
-                for (var i = 0; i < firstLength; i++)
-                    if (first[firstBegin + i] != second[secondBegin + i])
-                        return false;
-                return true;
+                lArr[i] = arr[p + i];
+                lSatArr.SetValue(satelliteData.GetValue(p + i), i);
             }
+            for (; j < n2; j++)
+            {
+                rArr[j] = arr[q + 1 + j];
+                rSatArr.SetValue(satelliteData.GetValue(q + 1 + j), j);
 
-            return false;
+
+            }
+            lArr[n1] = int.MaxValue;
+            rArr[n2] = int.MaxValue;
+            i = 0;
+            j = 0;
+            for (int k = p; k <= r; k++)
+            {
+                if (lArr[i] <= rArr[j])
+                {
+                    arr[k] = lArr[i];
+                    satelliteData.SetValue(lSatArr.GetValue(i), k);
+                    i++;
+                }
+                else
+                {
+                    arr[k] = rArr[j];
+                    satelliteData.SetValue(rSatArr.GetValue(j), k);
+                    j++;
+                }
+            }
         }
-
-        public static int FindString(string str, int begin, int end, string[] strings)
+        public static void MergeSort(int[] arr, int p, int r, Array satelliteData)
         {
-            for (var i = 0; i < strings.Length; i++)
-                if (StringsEqual(str, begin, end, strings[i], 0, strings[i].Length - 1))
+            if (p < r)
+            {
+                int q = (p + r) / 2;
+                MergeSort(arr, p, q, satelliteData);
+                MergeSort(arr, q + 1, r, satelliteData);
+                Merge(arr, p, q, r, satelliteData);
+            }
+        }
+        public static int FindString(string str, string[] strings)
+        {
+            for (int i = 0; i < strings.Length; i++)
+            {
+                if (strings[i].Equals(str))
+                {
                     return i;
+                }
+            }
             return -1;
         }
-
-        public static StringPos GetWordPos(string str, int begin, int end)
+        public static string GetTypeName(Type type)
         {
-            var result = new StringPos {begin = -1, end = -1};
-            var length = end - begin + 1;
-            for (var i = 0; i < length; i++)
+            string name;
+            if (Attribute.IsDefined(type, typeof(NameAttribute)))
             {
-                if (result.begin == -1 && str[i] != ' ') result.begin = i;
-                if (result.begin > -1 && str[i] == ' ')
-                {
-                    result.end = i - 1;
-                    return result;
-                }
+                name = ((NameAttribute)Attribute.GetCustomAttribute(type, typeof(NameAttribute))).Name;
             }
-
-            if (result.begin > -1)
+            else
             {
-                result.end = length - 1;
-                return result;
+                name = type.Name;
             }
-
-            return result;
+            return name;
         }
-
-        public static List<StringPos> GetWords(string str)
+        public static string GetPropertyName(PropertyInfo info)
         {
-            var result = new List<StringPos>();
-            var wordBegin = -1;
-            for (var i = 0; i < str.Length; i++)
+            string name;
+            if (Attribute.IsDefined(info, typeof(NameAttribute)))
             {
-                if (wordBegin == -1 && str[i] != ' ') wordBegin = i;
-                if (wordBegin > -1 && str[i] == ' ')
-                {
-                    var pos = new StringPos {begin = wordBegin, end = i - 1};
-                    result.Add(pos);
-                    wordBegin = -1;
-                }
+                name = ((NameAttribute)info.GetCustomAttribute(typeof(NameAttribute))).Name;
             }
-
-            if (wordBegin > -1)
+            else
             {
-                var pos = new StringPos {begin = wordBegin, end = str.Length - 1};
-                result.Add(pos);
+                name = info.Name;
             }
-
-            return result;
+            return name;
+        }
+        public static int GetPropertyDepth(PropertyInfo info, Type type)
+        {
+            bool declared = type.Equals(info.DeclaringType);
+            if (!declared)
+            {
+                return GetPropertyDepth(info, type.BaseType) + 1;
+            }
+            else
+            {
+                return 0;
+            }
+        }
+        public static void SortProperties(PropertyInfo[] properties, Type type)
+        {
+            int[] depths = new int[properties.Length];
+            for (int i = 0; i < depths.Length; i++)
+            {
+                depths[i] = -GetPropertyDepth(properties[i], type);
+            }
+            Misc.MergeSort(depths, 0, properties.Length - 1, properties);
+            return;
         }
     }
 }

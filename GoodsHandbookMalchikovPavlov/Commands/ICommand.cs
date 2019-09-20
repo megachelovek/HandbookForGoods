@@ -1,13 +1,12 @@
-﻿using System;
-
-namespace GoodsHandbookMalchikovPavlov
+﻿namespace GoodsHandbookMalchikovPavlov.Commands
 {
-    internal interface ICommand
+    public enum CommandReturnCode
     {
-        bool ProcessInput(string input, out string output, out bool attention);
-        bool ProcessCtrlCombinations(ConsoleKeyInfo keyInfo, out string output, out bool attention);
-
-        string GetCommandName();
-        string GetCommandUsageText();
+        Done, Undone
+    }
+    public interface ICommand
+    {
+        CommandReturnCode Process(string input);
+        string GetLastResponse();
     }
 }

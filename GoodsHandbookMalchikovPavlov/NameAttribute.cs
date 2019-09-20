@@ -3,13 +3,13 @@
 namespace GoodsHandbookMalchikovPavlov
 {
     [AttributeUsage(AttributeTargets.Property | AttributeTargets.Class)]
-    internal class NameAttribute : Attribute
+    class NameAttribute : Attribute
     {
+        private string name;
         public NameAttribute(string name)
         {
-            Name = name;
+            this.name = name;
         }
-
-        public string Name { get; }
+        public string Name { get { return name; } }
     }
 }

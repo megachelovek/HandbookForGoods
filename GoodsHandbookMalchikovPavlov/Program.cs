@@ -1,19 +1,11 @@
-﻿using System;
-
-namespace GoodsHandbookMalchikovPavlov
+﻿namespace GoodsHandbookMalchikovPavlov
 {
-    public static class Program
+    class Program
     {
-        private const string _intro =
-            "\n░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░\r\n░███╔╗╔╗█████████╔╗╔╗███████╔╗█████░\r\n░███║╚╝║╔═╗█╔═╦╗╔╝║║╚╗╔═╗╔═╗║╠╗████░\r\n░███║╔╗║║╬╚╗║║║║║╬║║╬║║╬║║╬║║═╣████░\r\n░███╚╝╚╝╚══╝╚╩═╝╚═╝╚═╝╚═╝╚═╝╚╩╝████░\r\n░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░\r\n\r";
-
-        public static void Main()
+        static void Main(string[] args)
         {
-            Console.WriteLine("Press any button to start\n");
-            Console.ReadKey();
-            Console.WriteLine(_intro);
-            var mainLoop = new MainLoop();
-            mainLoop.Begin();
+            Dispatcher dispatcher = new Dispatcher();
+            dispatcher.Start();
         }
     }
 }

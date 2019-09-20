@@ -1,29 +1,45 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Reflection;
-using System.Text;
+using GoodsHandbookMalchikovPavlov.Models;
 
 namespace GoodsHandbookMalchikovPavlov.Validators
 {
-    internal abstract class ProductValidator
+    internal sealed class ProductValidator
     {
-        protected string lastError;
-        protected object lastProperty;
-        protected StringBuilder outputBuffer = new StringBuilder();
-
-        public virtual bool Validate(Type productType, PropertyInfo info, string value)
+        delegate bool ValidateDelegate(Product product, PropertyInfo propertyInfo, string propertyValue,
+           out string errorMsg, out object convertedValue);
+        private Dictionary<Type, ValidateDelegate> validateMap;
+        private string lastErrorMessage;
+        private object lastConvertedValue;
+        public ProductValidator()
         {
-            var result = BasicTypesValidator.Validate(info.PropertyType, value, out lastProperty, out lastError);
-            return result;
+            validateMap = new Dictionary<Type, ValidateDelegate>()
+            {
+                { typeof(Product), ProductPartValidator.Validate },
+                { typeof(Book), BookPartValidator.Validate },
+                { typeof(Toy), ToyPartValidator.Validate },
+                { typeof(Appliances), AppliancesPartValidator.Validate }
+
+
+            };
         }
-
-        public object GetLastProperty()
+        public bool Validate(Product product, PropertyInfo propertyInfo, string propertyValue)
         {
-            return lastProperty;
+            if (validateMap.ContainsKey(propertyInfo.DeclaringType))
+            {
+                return validateMap[propertyInfo.DeclaringType](product, propertyInfo, propertyValue,
+                    out lastErrorMessage, out lastConvertedValue);
+            }
+            return false;
         }
-
-        public string GetLastError()
+        public string GetLastErrorMessage()
         {
-            return lastError;
+            return lastErrorMessage;
+        }
+        public object GetLastConvertedValue()
+        {
+            return lastConvertedValue;
         }
     }
 }
