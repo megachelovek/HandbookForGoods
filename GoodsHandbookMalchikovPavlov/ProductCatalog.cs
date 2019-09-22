@@ -4,6 +4,9 @@ using System.IO;
 using System.Runtime.Serialization.Formatters.Binary;
 using GoodsHandbookMalchikovPavlov.Models;
 using GoodsHandbookMalchikovPavlov.Validators;
+using System.Runtime.CompilerServices;
+
+[assembly: InternalsVisibleTo("ProductCatalogTests")]
 namespace GoodsHandbookMalchikovPavlov
 {
     [Serializable]
@@ -21,28 +24,35 @@ namespace GoodsHandbookMalchikovPavlov
     internal sealed class ProductCatalog : IProductCatalog
     {
         private readonly string catalogDataFileName;
-        private readonly ProductCatalogData catalogData;
+        private ProductCatalogData catalogData;
         private readonly ProductValidator productValidator = new ProductValidator();
         public ProductCatalog(string catalogDataFileName)
         {
             this.catalogDataFileName = catalogDataFileName;
             bool success = File.Exists(catalogDataFileName);
+            CreateCatalogData( success);
+        }
+
+        private void CreateCatalogData( bool success)
+        {
             if (success)
             {
-                var fs = File.Open(catalogDataFileName, FileMode.Open, FileAccess.Read);
+                var fs = File.Open(this.catalogDataFileName, FileMode.Open, FileAccess.Read);
                 success = fs.Length != 0;
                 if (success)
                 {
                     BinaryFormatter formatter = new BinaryFormatter();
-                    catalogData = (ProductCatalogData)formatter.Deserialize(fs);
+                    catalogData = (ProductCatalogData) formatter.Deserialize(fs);
                 }
+
                 fs.Dispose();
             }
-            if(!success)
-            {
+            else
+            { 
                 catalogData = new ProductCatalogData();
             }
         }
+
         public bool DoesProductExist(int productId)
         {
             return catalogData.ProductMap.ContainsKey(productId);
@@ -173,6 +183,21 @@ namespace GoodsHandbookMalchikovPavlov
             }
             
         }
+
+        public void ClearListCatalog()
+        {
+            bool success = File.Exists(catalogDataFileName);
+            if (success)
+            {
+                File.Delete(this.catalogDataFileName);
+                CreateCatalogData(false);
+            }
+            else
+            {
+                CreateCatalogData(false);
+            }
+        }
+
         private void WriteCatalogDataToFile()
         {
             var fs = File.Open(catalogDataFileName, FileMode.OpenOrCreate, FileAccess.ReadWrite);
@@ -180,5 +205,6 @@ namespace GoodsHandbookMalchikovPavlov
             formatter.Serialize(fs, catalogData);
             fs.Dispose();
         }
+        
     }
 }
