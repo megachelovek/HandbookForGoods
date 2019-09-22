@@ -1,9 +1,10 @@
 ﻿using System.Collections.Generic;
+using System.Reflection;
 using GoodsHandbookMalchikovPavlov.Models;
 using GoodsHandbookMalchikovPavlov.Validators;
 namespace GoodsHandbookMalchikovPavlov
 {
-    interface IProductCatalog
+    public interface IProductCatalog
     {
         /// <summary>
         /// Проверка, существует ли продукт с таким идентификатором.
@@ -48,13 +49,19 @@ namespace GoodsHandbookMalchikovPavlov
         /// Получение валидатора продукта.
         /// </summary>
         /// <returns>Валидатор</returns>
-        ProductValidator GetProductValidator();
+        ProductValidatorManager GetProductValidator();
 
         /// <summary>
         /// Получение списка типов.
         /// </summary>
         /// <returns></returns>
         string[] GetProductTypeNames();
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="propertyInfo"></param>
+        /// <returns></returns>
+        string[] GetProductPropertyValidValues(PropertyInfo propertyInfo);
 
         /// <summary>
         /// Получение списка уже существующих продуктов.

@@ -21,7 +21,7 @@ namespace GoodsHandbookMalchikovPavlov.Commands
         private Product product;
         private PropertyInfo[] productProperties;
         private int propertyIndex;
-        private ProductValidator validator;
+        private ProductValidatorManager validator;
         private IProductCatalog productCatalog;
         public CreateCommand(IProductCatalog productCatalog)
         {

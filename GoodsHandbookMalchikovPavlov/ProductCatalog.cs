@@ -2,11 +2,13 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Runtime.Serialization.Formatters.Binary;
+using System.Reflection;
 using GoodsHandbookMalchikovPavlov.Models;
 using GoodsHandbookMalchikovPavlov.Validators;
 using System.Runtime.CompilerServices;
 
 [assembly: InternalsVisibleTo("ProductCatalogTests")]
+[assembly: InternalsVisibleTo("ProductValidatorTests")]
 namespace GoodsHandbookMalchikovPavlov
 {
     [Serializable]
@@ -20,17 +22,54 @@ namespace GoodsHandbookMalchikovPavlov
                 "Book",
                 "Toy"
             };
+        public Dictionary<string, string[]> ProductPropertyValidValues { get; set; } = new Dictionary<string, string[]>();
+        public ProductCatalogData()
+        {
+            ProductPropertyValidValues.Add("BookGenre", new string[]
+                {
+                    "Fairy Tale",
+                    "Mystic",
+                    "Fantasy",
+                    "Detective",
+                    "Psychology",
+                    "Popular Science",
+                    "Educational",
+                    "Sentimental Novel",
+                    "Teenage Prose"
+                });
+            ProductPropertyValidValues.Add("ToyCategory", new string[]
+                {
+                    "Educational",
+                    "Video Game",
+                    "Doll",
+                    "Electronic"
+                });
+            ProductPropertyValidValues.Add("ToySex", new string[]
+                {
+                    "Male",
+                    "Female",
+                    "Any"
+                });
+            ProductPropertyValidValues.Add("AppliancesCategory", new string[]
+                {
+                   "Refrigerator",
+                   "Stove",
+                   "Teapot"
+                });
+        }
     }
+
     internal sealed class ProductCatalog : IProductCatalog
     {
         private readonly string catalogDataFileName;
         private ProductCatalogData catalogData;
-        private readonly ProductValidator productValidator = new ProductValidator();
+        private ProductValidatorManager productValidatorManager;
         public ProductCatalog(string catalogDataFileName)
         {
             this.catalogDataFileName = catalogDataFileName;
             bool success = File.Exists(catalogDataFileName);
             CreateCatalogData( success);
+            productValidatorManager = new ProductValidatorManager(this);
         }
 
         private void CreateCatalogData( bool success)
@@ -118,14 +157,27 @@ namespace GoodsHandbookMalchikovPavlov
                 throw new ArgumentException();
             }
         }
-        public ProductValidator GetProductValidator()
+        public ProductValidatorManager GetProductValidator()
         {
-            return productValidator;
+            return productValidatorManager;
         }
         public string[] GetProductTypeNames()
         {
             return catalogData.ProductTypeNames;
         }
+        public string[] GetProductPropertyValidValues(PropertyInfo propertyInfo)
+        {
+            string key = propertyInfo.DeclaringType.Name + propertyInfo.Name;
+            if (catalogData.ProductPropertyValidValues.ContainsKey(key))
+            {
+                return catalogData.ProductPropertyValidValues[key];
+            }
+            else
+            {
+                throw new ArgumentException();
+            }
+        }
+
         public IList<Product> GetProducts(string productTypeToFilterBy = null)
         {
             Type type = null;
