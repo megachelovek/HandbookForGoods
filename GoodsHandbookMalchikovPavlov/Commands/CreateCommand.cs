@@ -5,6 +5,12 @@ using GoodsHandbookMalchikovPavlov.Models;
 using GoodsHandbookMalchikovPavlov.Validators;
 namespace GoodsHandbookMalchikovPavlov.Commands
 {
+    /// <remarks>
+    /// 1. Нет комментариев.
+    /// 2. Где это возможно - делайте поля readonly.
+    /// 3. В вашей постановке это не имеет большого значения, но в более близких к реалиям программах необходимо
+    /// хранить строковые конструкции в ресурсах, чтобы их можно было а) легко изменить и б) локализовать.
+    /// </remarks>>
     internal sealed class CreateCommand : ICommand
     {
         private readonly string productTypeInputRequest =
@@ -41,7 +47,10 @@ namespace GoodsHandbookMalchikovPavlov.Commands
         public CommandReturnCode Process(string input)
         {
             responseBuffer.Length = 0;
+            // Мы уже получали список слов из входной строки в ProcessInput() выше в алгоритме.
+            // Зачем делать это снова?
             string[] args = InputParser.GetWords(input);
+            // Что этот флаг означает? Я так и не смог попасть на кейс, когда "не-fitstTimeThrough"
             if (firstTimeThrough)
             {
                 return HandleFirstTimeThrough(args);

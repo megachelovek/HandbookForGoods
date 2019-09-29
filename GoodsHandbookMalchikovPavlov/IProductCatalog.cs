@@ -4,6 +4,12 @@ using GoodsHandbookMalchikovPavlov.Models;
 using GoodsHandbookMalchikovPavlov.Validators;
 namespace GoodsHandbookMalchikovPavlov
 {
+    /// <summary>
+    /// 1. returns в саммари нужно или заполнять, или удалять
+    /// 2. IsProductExist / ProductExists
+    /// 3. Слово Product из всех CRUD-методов можно убрать, мы и так работаем в контексте каталога продуктов
+    /// 4. В методах интерфейса лучше не завязываться на массивы в возвращаемом значении, заменив их на IEnumerable<T> 
+    /// </summary>
     public interface IProductCatalog
     {
         /// <summary>
