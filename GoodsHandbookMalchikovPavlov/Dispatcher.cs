@@ -39,16 +39,17 @@ namespace GoodsHandbookMalchikovPavlov
         private ICommand activeCommand;
         private string activeCommandName;
         private string response;
+        private string[] currentArgs;
         public Dispatcher()
         {
             productCatalog = new ProductCatalog("product_data");
             commandMap = new Dictionary<string, ICommand>()
             {
-                {"create",  new CreateCommand(productCatalog)},
-                {"list",  new ListCommand(productCatalog)},
-                {"delete",  new DeleteCommand(productCatalog)},
-                {"add-count",  new AddCountCommand(productCatalog)},
-                {"sub-count",  new SubstractCountCommand(productCatalog)}
+                {"create",  new CreateCommand(productCatalog,currentArgs)},
+                {"list",  new ListCommand(productCatalog,currentArgs)},
+                {"delete",  new DeleteCommand(productCatalog,currentArgs)},
+                {"add-count",  new AddCountCommand(productCatalog,currentArgs)},
+                {"sub-count",  new SubstractCountCommand(productCatalog,currentArgs)}
             };
         }
         public void Start()
