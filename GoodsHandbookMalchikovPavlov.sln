@@ -1,11 +1,13 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.28307.757
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.29123.88
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GoodsHandbookMalchikovPavlov", "GoodsHandbookMalchikovPavlov\GoodsHandbookMalchikovPavlov.csproj", "{C8FD7480-A59B-4CFE-BB3B-C7AF81F9777C}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ProductCatalogTests", "ProductCatalogTests\ProductCatalogTests.csproj", "{6252A37D-8981-4CE2-8960-D698A9A4CDF3}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ProductCatalogTests", "ProductCatalogTests\ProductCatalogTests.csproj", "{6252A37D-8981-4CE2-8960-D698A9A4CDF3}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ProductValidatorTests", "ProductValidatorTests\ProductValidatorTests.csproj", "{471D8D43-E9EE-42C5-962A-7FB580CEF689}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,6 +23,10 @@ Global
 		{6252A37D-8981-4CE2-8960-D698A9A4CDF3}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6252A37D-8981-4CE2-8960-D698A9A4CDF3}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{6252A37D-8981-4CE2-8960-D698A9A4CDF3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{471D8D43-E9EE-42C5-962A-7FB580CEF689}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{471D8D43-E9EE-42C5-962A-7FB580CEF689}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{471D8D43-E9EE-42C5-962A-7FB580CEF689}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{471D8D43-E9EE-42C5-962A-7FB580CEF689}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

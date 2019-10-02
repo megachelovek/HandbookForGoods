@@ -3,6 +3,16 @@ using System.Collections.Generic;
 using GoodsHandbookMalchikovPavlov.Commands;
 namespace GoodsHandbookMalchikovPavlov
 {
+    /// <remarks>
+    /// 1. Не хватает комментариев. Пожалейте людей, которые будут работать с вашим кодом. Какой бы прозрачной ни была
+    /// задумка - ОБЯЗАТЕЛЬНО пишите саммари для а) класса, б) всех методов публичного API и с) наиболее важных
+    /// сервисных методов, даже если они private. Для вашей реализации это вдвойне важная рекомендация, потому что вы
+    /// выбрали state-реализацию, где активно в разных местах программы меняются поля экземпляра.
+    /// 2. Почему боимся использовать var?
+    /// 3. Форматирование. Между блоками кода, обрамленными в фигурные скобки, не должно быть пустых строк. Методы
+    /// должны разделяться пустой строкой, коду нужен "воздух". Поля от первого метода (или конструктора), следующего за
+    /// ними, также должны отделяться пустой строкой.
+    /// </remarks>>
     public class Dispatcher
     {
         private readonly IProductCatalog productCatalog;
@@ -30,7 +40,6 @@ namespace GoodsHandbookMalchikovPavlov
         private string activeCommandName;
         private string response;
         private string[] currentArgs;
-
         public Dispatcher()
         {
             productCatalog = new ProductCatalog("product_data");
@@ -43,7 +52,6 @@ namespace GoodsHandbookMalchikovPavlov
                 {"sub-count",  new SubstractCountCommand(productCatalog,currentArgs)}
             };
         }
-
         public void Start()
         {
             activeCommand = null;
@@ -62,12 +70,12 @@ namespace GoodsHandbookMalchikovPavlov
                 }
             }
         }
-
         private string GatherInput()
         {
             return Console.ReadLine();
         }
-
+        // Загнав себя в рамки state-like-реализации, вы заодно усложнили себе жизнь в части тестирования самого важного
+        // метода вашей утилиты - процессинга ввода.
         private bool ProcessInput(string input)
         {
             response = null;
@@ -83,21 +91,21 @@ namespace GoodsHandbookMalchikovPavlov
             }
             else
             {
-                currentArgs = InputParser.GetWords(input);
-                if (currentArgs.Length > 0)
+                string[] args = InputParser.GetWords(input);
+                if (args.Length > 0)
                 {
-                    if (currentArgs[0].Equals("quit", StringComparison.OrdinalIgnoreCase))
+                    if (args[0].Equals("quit", StringComparison.OrdinalIgnoreCase))
                     {
                         return true;
                     }
-                    else if ((currentArgs[0].Equals("help", StringComparison.OrdinalIgnoreCase)))
+                    else if ((args[0].Equals("help", StringComparison.OrdinalIgnoreCase)))
                     {
                         response = help;
                     }
-                    else if (commandMap.ContainsKey(currentArgs[0]))
+                    else if (commandMap.ContainsKey(args[0]))
                     {
-                        activeCommand = commandMap[currentArgs[0]];
-                        activeCommandName = currentArgs[0];
+                        activeCommand = commandMap[args[0]];
+                        activeCommandName = args[0];
                         bool done = activeCommand.Process(input) == CommandReturnCode.Done;
                         response = activeCommand.GetLastResponse();
                         if (done)
@@ -114,7 +122,6 @@ namespace GoodsHandbookMalchikovPavlov
             }
             return false;
         }
-
         private void OutputPrompt()
         {
             ConsoleColor temp = Console.ForegroundColor;
@@ -123,7 +130,6 @@ namespace GoodsHandbookMalchikovPavlov
             Console.Write(">>>");
             Console.ForegroundColor = temp;
         }
-
         private void OutputResponse()
         {
             if (response != null && response.Length > 0)

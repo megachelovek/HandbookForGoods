@@ -1,9 +1,16 @@
 ﻿using System.Collections.Generic;
+using System.Reflection;
 using GoodsHandbookMalchikovPavlov.Models;
 using GoodsHandbookMalchikovPavlov.Validators;
 namespace GoodsHandbookMalchikovPavlov
 {
-    interface IProductCatalog
+    /// <summary>
+    /// 1. returns в саммари нужно или заполнять, или удалять
+    /// 2. IsProductExist / ProductExists
+    /// 3. Слово Product из всех CRUD-методов можно убрать, мы и так работаем в контексте каталога продуктов
+    /// 4. В методах интерфейса лучше не завязываться на массивы в возвращаемом значении, заменив их на IEnumerable<T> 
+    /// </summary>
+    public interface IProductCatalog
     {
         /// <summary>
         /// Проверка, существует ли продукт с таким идентификатором.
@@ -48,13 +55,19 @@ namespace GoodsHandbookMalchikovPavlov
         /// Получение валидатора продукта.
         /// </summary>
         /// <returns>Валидатор</returns>
-        ProductValidator GetProductValidator();
+        ProductValidatorManager GetProductValidator();
 
         /// <summary>
         /// Получение списка типов.
         /// </summary>
         /// <returns></returns>
         string[] GetProductTypeNames();
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="propertyInfo"></param>
+        /// <returns></returns>
+        string[] GetProductPropertyValidValues(PropertyInfo propertyInfo);
 
         /// <summary>
         /// Получение списка уже существующих продуктов.

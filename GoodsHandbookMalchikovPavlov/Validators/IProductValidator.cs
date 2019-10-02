@@ -1,11 +1,10 @@
-﻿using GoodsHandbookMalchikovPavlov.Models;
+﻿using System.Reflection;
+using GoodsHandbookMalchikovPavlov.Models;
 namespace GoodsHandbookMalchikovPavlov.Validators
 {
     interface IProductValidator
     {
-        void Reset(Product product);
-        bool Validate(string propertyName, string propertyValue);
-        string GetLastErrorMessage();
-        object GetLastConvertedValue();
+        bool Validate(Product product, PropertyInfo propertyInfo, string propertyValue,
+            out string errorMsg, out object convertedValue);
     }
 }
