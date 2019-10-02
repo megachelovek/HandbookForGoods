@@ -29,18 +29,21 @@ namespace GoodsHandbookMalchikovPavlov
         private ICommand activeCommand;
         private string activeCommandName;
         private string response;
+        private string[] currentArgs;
+
         public Dispatcher()
         {
             productCatalog = new ProductCatalog("product_data");
             commandMap = new Dictionary<string, ICommand>()
             {
-                {"create",  new CreateCommand(productCatalog)},
-                {"list",  new ListCommand(productCatalog)},
-                {"delete",  new DeleteCommand(productCatalog)},
-                {"add-count",  new AddCountCommand(productCatalog)},
-                {"sub-count",  new SubstractCountCommand(productCatalog)}
+                {"create",  new CreateCommand(productCatalog,currentArgs)},
+                {"list",  new ListCommand(productCatalog,currentArgs)},
+                {"delete",  new DeleteCommand(productCatalog,currentArgs)},
+                {"add-count",  new AddCountCommand(productCatalog,currentArgs)},
+                {"sub-count",  new SubstractCountCommand(productCatalog,currentArgs)}
             };
         }
+
         public void Start()
         {
             activeCommand = null;
@@ -59,10 +62,12 @@ namespace GoodsHandbookMalchikovPavlov
                 }
             }
         }
+
         private string GatherInput()
         {
             return Console.ReadLine();
         }
+
         private bool ProcessInput(string input)
         {
             response = null;
@@ -78,21 +83,21 @@ namespace GoodsHandbookMalchikovPavlov
             }
             else
             {
-                string[] args = InputParser.GetWords(input);
-                if (args.Length > 0)
+                currentArgs = InputParser.GetWords(input);
+                if (currentArgs.Length > 0)
                 {
-                    if (args[0].Equals("quit", StringComparison.OrdinalIgnoreCase))
+                    if (currentArgs[0].Equals("quit", StringComparison.OrdinalIgnoreCase))
                     {
                         return true;
                     }
-                    else if ((args[0].Equals("help", StringComparison.OrdinalIgnoreCase)))
+                    else if ((currentArgs[0].Equals("help", StringComparison.OrdinalIgnoreCase)))
                     {
                         response = help;
                     }
-                    else if (commandMap.ContainsKey(args[0]))
+                    else if (commandMap.ContainsKey(currentArgs[0]))
                     {
-                        activeCommand = commandMap[args[0]];
-                        activeCommandName = args[0];
+                        activeCommand = commandMap[currentArgs[0]];
+                        activeCommandName = currentArgs[0];
                         bool done = activeCommand.Process(input) == CommandReturnCode.Done;
                         response = activeCommand.GetLastResponse();
                         if (done)
@@ -109,6 +114,7 @@ namespace GoodsHandbookMalchikovPavlov
             }
             return false;
         }
+
         private void OutputPrompt()
         {
             ConsoleColor temp = Console.ForegroundColor;
@@ -117,6 +123,7 @@ namespace GoodsHandbookMalchikovPavlov
             Console.Write(">>>");
             Console.ForegroundColor = temp;
         }
+
         private void OutputResponse()
         {
             if (response != null && response.Length > 0)

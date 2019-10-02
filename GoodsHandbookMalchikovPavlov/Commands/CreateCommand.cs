@@ -5,7 +5,10 @@ using GoodsHandbookMalchikovPavlov.Models;
 using GoodsHandbookMalchikovPavlov.Validators;
 namespace GoodsHandbookMalchikovPavlov.Commands
 {
-    internal sealed class CreateCommand : ICommand
+    /// <summary>
+    /// Добавление продукта в список
+    /// </summary>
+    internal class CreateCommand : ICommand
     {
         private readonly string productTypeInputRequest =
             "Enter \"product type\"";
@@ -14,37 +17,45 @@ namespace GoodsHandbookMalchikovPavlov.Commands
         private readonly string productTypeDoesntExist =
             "Product type \"{0}\" does not exist" + Environment.NewLine +
             "List of available product types:" + Environment.NewLine;
-        private StringBuilder responseBuffer = new StringBuilder();
+        private readonly StringBuilder responseBuffer = new StringBuilder();
         private bool firstTimeThrough = true;
         private bool initialized = false;
         private bool inputRequested = false;
+        private string[] args;
         private Product product;
         private PropertyInfo[] productProperties;
         private int propertyIndex;
-        private ProductValidator validator;
-        private IProductCatalog productCatalog;
-        public CreateCommand(IProductCatalog productCatalog)
+        private readonly ProductValidator validator;
+        private readonly IProductCatalog productCatalog;
+
+        public CreateCommand(IProductCatalog productCatalog,string[] args)
         {
-            this.productCatalog = productCatalog;
-            validator = productCatalog.GetProductValidator();
-            StringBuilder buffer = new StringBuilder(64);
-            buffer.Append(productTypeDoesntExist);
-            string[] names = productCatalog.GetProductTypeNames();
-            foreach (var name in names)
+            if (!firstTimeThrough)
             {
-                buffer.Append("-");
-                buffer.Append(name);
-                buffer.Append(Environment.NewLine);
+
+                this.productCatalog = productCatalog;
+                this.args = args;
+                validator = productCatalog.GetProductValidator();
+                StringBuilder buffer = new StringBuilder(64);
+                buffer.Append(productTypeDoesntExist);
+                string[] names = productCatalog.GetProductTypeNames();
+                foreach (var name in names)
+                {
+                    buffer.Append("-");
+                    buffer.Append(name);
+                    buffer.Append(Environment.NewLine);
+                }
+
+                productTypeDoesntExist = buffer.ToString();
             }
-            productTypeDoesntExist = buffer.ToString();
         }
+
         public CommandReturnCode Process(string input)
         {
             responseBuffer.Length = 0;
-            string[] args = InputParser.GetWords(input);
             if (firstTimeThrough)
             {
-                return HandleFirstTimeThrough(args);
+                return HandleFirstTimeThrough();
             }
             if (inputRequested)
             {
@@ -63,11 +74,13 @@ namespace GoodsHandbookMalchikovPavlov.Commands
             RequestInput();
             return CommandReturnCode.Undone;
         }
+
         public string GetLastResponse()
         {
             return responseBuffer.ToString();
         }
-        private CommandReturnCode HandleFirstTimeThrough(string[] args)
+
+        private CommandReturnCode HandleFirstTimeThrough()
         {
             bool success = false;
             if (args.Length == 1)
@@ -100,6 +113,7 @@ namespace GoodsHandbookMalchikovPavlov.Commands
             }
             return CommandReturnCode.Done;
         }
+
         private bool Init(string productTypeName)
         {
             try
@@ -117,6 +131,7 @@ namespace GoodsHandbookMalchikovPavlov.Commands
             initialized = true;
             return true;
         }
+
         private void SkipId()
         {
             if (initialized)
@@ -130,6 +145,7 @@ namespace GoodsHandbookMalchikovPavlov.Commands
                 }
             }
         }
+
         private void RequestInput()
         {
             if (!initialized)
@@ -143,6 +159,7 @@ namespace GoodsHandbookMalchikovPavlov.Commands
             }
             inputRequested = true;
         }
+
         private bool Quit(string[] args)
         {
             if (args.Length == 1 && args[0].Equals("quit", StringComparison.OrdinalIgnoreCase))
@@ -151,6 +168,7 @@ namespace GoodsHandbookMalchikovPavlov.Commands
             }
             return false;
         }
+
         private void Reset()
         {
             firstTimeThrough = true;
@@ -160,6 +178,7 @@ namespace GoodsHandbookMalchikovPavlov.Commands
             productProperties = null;
             propertyIndex = 0;
         }
+
         private bool Update(string input)
         {
             if (!initialized)

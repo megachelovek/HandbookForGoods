@@ -1,6 +1,9 @@
 ﻿using System;
 namespace GoodsHandbookMalchikovPavlov.Models
 {
+    /// <summary>
+    /// Книги
+    /// </summary>
     [Serializable]
     public sealed class Book : Product
     {

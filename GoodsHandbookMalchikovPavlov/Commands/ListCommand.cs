@@ -7,18 +7,24 @@ using GoodsHandbookMalchikovPavlov.Models;
 
 namespace GoodsHandbookMalchikovPavlov.Commands
 {
-    internal sealed class ListCommand : ICommand
+    /// <summary>
+    /// Вывод списка продуктов
+    /// </summary>
+    internal  class ListCommand : ICommand
     {
         private readonly string Usage =
             "list [product type] [-full]" + Environment.NewLine;
         private readonly string ProductTypeDoesntExist =
             "Product type \"{0}\" does not exist" + Environment.NewLine +
             "List of available product types:" + Environment.NewLine;
-        private StringBuilder responseBuffer = new StringBuilder();
-        private IProductCatalog productCatalog;
-        public ListCommand(IProductCatalog productCatalog)
+        private readonly StringBuilder responseBuffer = new StringBuilder();
+        private readonly IProductCatalog productCatalog;
+        private string[] args;
+
+        public ListCommand(IProductCatalog productCatalog, string[] args)
         {
             this.productCatalog = productCatalog;
+            this.args = args;
             StringBuilder buffer = new StringBuilder(64);
             buffer.Append(ProductTypeDoesntExist);
             string[] names = productCatalog.GetProductTypeNames();
@@ -30,10 +36,10 @@ namespace GoodsHandbookMalchikovPavlov.Commands
             }
             ProductTypeDoesntExist = buffer.ToString();
         }
+
         public CommandReturnCode Process(string input)
         {
             responseBuffer.Length = 0;
-            string[] args = InputParser.GetWords(input);
             if (args.Length == 1)
             {
                 Debug.Assert(args[0].Equals("list", StringComparison.OrdinalIgnoreCase));
@@ -87,6 +93,7 @@ namespace GoodsHandbookMalchikovPavlov.Commands
             }
             return CommandReturnCode.Done;
         }
+
         public string GetLastResponse()
         {
             return responseBuffer.ToString();
@@ -107,6 +114,7 @@ namespace GoodsHandbookMalchikovPavlov.Commands
                 }
             }
         }
+
         private void ListFull(IList<Product> products)
         {
             if (products.Count > 0)

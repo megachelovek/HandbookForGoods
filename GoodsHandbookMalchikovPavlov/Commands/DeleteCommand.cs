@@ -3,19 +3,25 @@ using System.Text;
 using System.Diagnostics;
 namespace GoodsHandbookMalchikovPavlov.Commands
 {
-    internal sealed class DeleteCommand : ICommand
+    /// <summary>
+    /// Удаление продукта из списка
+    /// </summary>
+    internal  class DeleteCommand : ICommand
     {
         private readonly string Usage = "usage: delete \"product id\"" + Environment.NewLine;
-        private StringBuilder responseBuffer = new StringBuilder();
-        private IProductCatalog productCatalog;
-        public DeleteCommand(IProductCatalog productCatalog)
+        private readonly StringBuilder responseBuffer = new StringBuilder();
+        private readonly IProductCatalog productCatalog;
+        private string[] args;
+
+        public DeleteCommand(IProductCatalog productCatalog, string[] args)
         {
             this.productCatalog = productCatalog;
+            this.args = args;
         }
+
         public CommandReturnCode Process(string input)
         {
             responseBuffer.Length = 0;
-            string[] args = InputParser.GetWords(input);
             if (args.Length == 2)
             {
                 Debug.Assert(args[0].Equals("delete", StringComparison.OrdinalIgnoreCase));
@@ -44,6 +50,7 @@ namespace GoodsHandbookMalchikovPavlov.Commands
             }
             return CommandReturnCode.Done;
         }
+
         public string GetLastResponse()
         {
             return responseBuffer.ToString();

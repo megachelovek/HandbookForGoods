@@ -3,19 +3,25 @@ using System.Text;
 using System.Diagnostics;
 namespace GoodsHandbookMalchikovPavlov.Commands
 {
-    internal sealed class AddCountCommand : ICommand
+    /// <summary>
+    /// Команда добавления количества продуктов
+    /// </summary>
+    internal  class AddCountCommand : ICommand
     {
         private readonly string Usage = "usage: add-count \"product id\" \"count\"" + Environment.NewLine;
-        private StringBuilder responseBuffer = new StringBuilder();
-        private IProductCatalog productCatalog;
-        public AddCountCommand(IProductCatalog productCatalog)
+        private readonly StringBuilder responseBuffer = new StringBuilder();
+        private readonly IProductCatalog productCatalog;
+        private string[] args;
+
+        public AddCountCommand(IProductCatalog productCatalog, string[] args)
         {
             this.productCatalog = productCatalog;
+            this.args = args;
         }
+
         public CommandReturnCode Process(string input)
         {
             responseBuffer.Length = 0;
-            string[] args = InputParser.GetWords(input);
             if (args.Length == 3)
             {
                 Debug.Assert(args[0].Equals("add-count", StringComparison.OrdinalIgnoreCase));
@@ -54,6 +60,7 @@ namespace GoodsHandbookMalchikovPavlov.Commands
             }
             return CommandReturnCode.Done;
         }
+
         public string GetLastResponse()
         {
             return responseBuffer.ToString();
