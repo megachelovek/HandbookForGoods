@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using System.Resources;
 using System.Text;
+using GoodsHandbookMalchikovPavlov.Models;
 using GoodsHandbookMalchikovPavlov.Properties;
 
 namespace GoodsHandbookMalchikovPavlov.Commands
@@ -9,7 +10,7 @@ namespace GoodsHandbookMalchikovPavlov.Commands
     /// <summary>
     ///     Удаление продукта из списка
     /// </summary>
-    internal class DeleteCommand : ICommand
+    internal class GetItemCommand : ICommand
     {
         private readonly IProductCatalog productCatalog;
         private readonly StringBuilder responseBuffer = new StringBuilder();
@@ -17,9 +18,9 @@ namespace GoodsHandbookMalchikovPavlov.Commands
         private string[] args;
         private readonly ResourceManager resourceManager = new ResourceManager(typeof(Resources));
 
-        public DeleteCommand(IProductCatalog productCatalog, string[] args)
+        public GetItemCommand(IProductCatalog productCatalog, string[] args)
         {
-            usage = resourceManager.GetString("DELETE_USAGE");
+            usage = resourceManager.GetString("GETITEM_USAGE");
             this.productCatalog = productCatalog;
             this.args = args;
         }
@@ -29,7 +30,7 @@ namespace GoodsHandbookMalchikovPavlov.Commands
             responseBuffer.Length = 0;
             if (args.Length == 2)
             {
-                Debug.Assert(args[0].Equals("delete", StringComparison.OrdinalIgnoreCase));
+                Debug.Assert(args[0].Equals("get-item", StringComparison.OrdinalIgnoreCase));
 
                 int id;
                 var isIdValid = int.TryParse(args[1], out id);
@@ -38,9 +39,8 @@ namespace GoodsHandbookMalchikovPavlov.Commands
                     isIdValid = productCatalog.IsExist(id);
                     if (isIdValid)
                     {
-                        productCatalog.Delete(id);
-                        responseBuffer.Append(string.Format("Product with Id = \"{0}\" has been successfully deleted",
-                            id));
+                        Product product= productCatalog.GetItem(id);
+                        responseBuffer.Append($"Product Id = {product.Id}\nName={product.Name}\nPrice={product.Price}\nCount={product.Count}\nUnit={product.Unit}");
                         responseBuffer.Append(Environment.NewLine);
                     }
                 }

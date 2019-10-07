@@ -2,11 +2,23 @@
 {
     public enum CommandReturnCode
     {
-        Done, Undone
+        Done,
+        Undone
     }
+
     public interface ICommand
     {
-        CommandReturnCode Process(string input);
+        /// <summary>
+        ///     Процесс выполнения команды с аргументами
+        /// </summary>
+        /// <param name="input"></param>
+        /// <returns></returns>
+        CommandReturnCode Process(string[] input);
+
+        /// <summary>
+        ///     Получение последнего ответа
+        /// </summary>
+        /// <returns></returns>
         string GetLastResponse();
     }
 }

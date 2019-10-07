@@ -1,8 +1,9 @@
 ﻿using System;
+
 namespace GoodsHandbookMalchikovPavlov.Models
 {
     /// <summary>
-    /// Продукт
+    ///     Продукт
     /// </summary>
     [Serializable]
     public abstract class Product

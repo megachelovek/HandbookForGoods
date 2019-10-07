@@ -1,57 +1,37 @@
 ﻿using System;
-using System.Collections.Generic;
+using System.Linq;
+using System.Resources;
 using GoodsHandbookMalchikovPavlov.Commands;
+using GoodsHandbookMalchikovPavlov.Properties;
+
 namespace GoodsHandbookMalchikovPavlov
 {
-    /// <remarks>
-    /// 1. Не хватает комментариев. Пожалейте людей, которые будут работать с вашим кодом. Какой бы прозрачной ни была
-    /// задумка - ОБЯЗАТЕЛЬНО пишите саммари для а) класса, б) всех методов публичного API и с) наиболее важных
-    /// сервисных методов, даже если они private. Для вашей реализации это вдвойне важная рекомендация, потому что вы
-    /// выбрали state-реализацию, где активно в разных местах программы меняются поля экземпляра.
-    /// 2. Почему боимся использовать var?
-    /// 3. Форматирование. Между блоками кода, обрамленными в фигурные скобки, не должно быть пустых строк. Методы
-    /// должны разделяться пустой строкой, коду нужен "воздух". Поля от первого метода (или конструктора), следующего за
-    /// ними, также должны отделяться пустой строкой.
-    /// </remarks>>
+    /// <summary>
+    ///     Диспетчер, который прослушивает команды, вводимые пользователем
+    ///     и передает параметры командам, которые их выполняют
+    /// </summary>
     public class Dispatcher
     {
         private readonly IProductCatalog productCatalog;
-        private readonly Dictionary<string, ICommand> commandMap;
-        private readonly string help =
-            "Yooper is a product catalog program" + Environment.NewLine +
-            "Available commands:" + Environment.NewLine +
-            "create [product type] - creates new product and adds it to a catalog" + Environment.NewLine +
-            "                        \"product type\" can be specified inline" + Environment.NewLine +
-            "                        with command via optional parameter" + Environment.NewLine +
-            "list [product type]   - lists products presented in catalog" + Environment.NewLine +
-            "     [-full]            to filter output by product type" + Environment.NewLine +
-            "                        use optional parameter  \"product type\"" + Environment.NewLine +
-            "                        use option \"-full\" to get detailed output" + Environment.NewLine +
-            "delete \"product id\"     deletes product from catalog by id" + Environment.NewLine +
-            "add-count             - increases count of product" + Environment.NewLine +
-            "         \"product id\"" + Environment.NewLine +
-            "         \"count\"" + Environment.NewLine +
-            "sub-count             - decreases count of product" + Environment.NewLine +
-            "         \"product id\"" + Environment.NewLine +
-            "         \"count\"" + Environment.NewLine +
-            "quit                  - quites the program or, if used during execution" + Environment.NewLine +
-            "                        of interactive command, exits from that command";
         private ICommand activeCommand;
         private string activeCommandName;
-        private string response;
+
+        private readonly string[] commands = {"create", "list", "delete", "add-count", "sub-count","get-item"};
         private string[] currentArgs;
+        private readonly string help;
+
+        private readonly ResourceManager resourceManager = new ResourceManager(typeof(Resources));
+        private string response;
+
         public Dispatcher()
         {
             productCatalog = new ProductCatalog("product_data");
-            commandMap = new Dictionary<string, ICommand>()
-            {
-                {"create",  new CreateCommand(productCatalog,currentArgs)},
-                {"list",  new ListCommand(productCatalog,currentArgs)},
-                {"delete",  new DeleteCommand(productCatalog,currentArgs)},
-                {"add-count",  new AddCountCommand(productCatalog,currentArgs)},
-                {"sub-count",  new SubstractCountCommand(productCatalog,currentArgs)}
-            };
+            help = resourceManager.GetString("HELP");
         }
+
+        /// <summary>
+        ///     Запуск основного цикла программы, выход по quit
+        /// </summary>
         public void Start()
         {
             activeCommand = null;
@@ -61,27 +41,33 @@ namespace GoodsHandbookMalchikovPavlov
             while (true)
             {
                 OutputPrompt();
-                string input = GatherInput();
-                bool done = ProcessInput(input);
+                var input = GatherInput();
+                var done = ProcessInput(input);
                 OutputResponse();
-                if (done)
-                {
-                    break;
-                }
+                if (done) break;
             }
         }
+
+        /// <summary>
+        ///     Ввод
+        /// </summary>
+        /// <returns></returns>
         private string GatherInput()
         {
             return Console.ReadLine();
         }
-        // Загнав себя в рамки state-like-реализации, вы заодно усложнили себе жизнь в части тестирования самого важного
-        // метода вашей утилиты - процессинга ввода.
+
+        /// <summary>
+        ///     Процесс ввода аргументов
+        /// </summary>
+        /// <param name="input">новый аргумент</param>
+        /// <returns>Завершен</returns>
         private bool ProcessInput(string input)
         {
             response = null;
             if (activeCommand != null)
             {
-                bool done = activeCommand.Process(input) == CommandReturnCode.Done;
+                var done = activeCommand.Process(InputParser.GetWords(input)) == CommandReturnCode.Done;
                 response = activeCommand.GetLastResponse();
                 if (done)
                 {
@@ -91,22 +77,20 @@ namespace GoodsHandbookMalchikovPavlov
             }
             else
             {
-                string[] args = InputParser.GetWords(input);
-                if (args.Length > 0)
+                var currentArgs = InputParser.GetWords(input);
+                if (currentArgs.Length > 0)
                 {
-                    if (args[0].Equals("quit", StringComparison.OrdinalIgnoreCase))
-                    {
-                        return true;
-                    }
-                    else if ((args[0].Equals("help", StringComparison.OrdinalIgnoreCase)))
+                    if (currentArgs[0].Equals("quit", StringComparison.OrdinalIgnoreCase)) return true;
+
+                    if (currentArgs[0].Equals("help", StringComparison.OrdinalIgnoreCase))
                     {
                         response = help;
                     }
-                    else if (commandMap.ContainsKey(args[0]))
+                    else if (commands.Contains(currentArgs[0]))
                     {
-                        activeCommand = commandMap[args[0]];
-                        activeCommandName = args[0];
-                        bool done = activeCommand.Process(input) == CommandReturnCode.Done;
+                        activeCommand = CallCommand(currentArgs[0]);
+                        activeCommandName = currentArgs[0];
+                        var done = activeCommand.Process(currentArgs) == CommandReturnCode.Done;
                         response = activeCommand.GetLastResponse();
                         if (done)
                         {
@@ -115,35 +99,71 @@ namespace GoodsHandbookMalchikovPavlov
                         }
                     }
                     else
-                    { 
+                    {
                         response = help;
                     }
                 }
             }
+
             return false;
         }
+
+        /// <summary>
+        ///     Кастомизированный вывод
+        /// </summary>
         private void OutputPrompt()
         {
-            ConsoleColor temp = Console.ForegroundColor;
+            var temp = Console.ForegroundColor;
             Console.ForegroundColor = ConsoleColor.Green;
             Console.Write(activeCommandName);
             Console.Write(">>>");
             Console.ForegroundColor = temp;
         }
+
+        /// <summary>
+        ///     Вывод строк
+        /// </summary>
         private void OutputResponse()
         {
             if (response != null && response.Length > 0)
             {
-                while(response.EndsWith(Environment.NewLine) && (response.Length > 0))
-                {
+                while (response.EndsWith(Environment.NewLine) && response.Length > 0)
                     response = response.Substring(0, response.Length - 1);
-                }
-                if (response.Length > 0)
-                {
-                    Console.WriteLine(response);
-                }
+                if (response.Length > 0) Console.WriteLine(response);
+            }
+        }
+
+        /// <summary>
+        ///     Создание и вызов нужной команды
+        /// </summary>
+        /// <param name="command">название команды</param>
+        /// <returns>Команда</returns>
+        private ICommand CallCommand(string command)
+        {
+            ICommand newCommand = null;
+            switch (command)
+            {
+                case "create":
+                    newCommand = new CreateCommand(productCatalog, currentArgs);
+                    break;
+                case "list":
+                    newCommand = new ListCommand(productCatalog, currentArgs);
+                    break;
+                case "delete":
+                    newCommand = new DeleteCommand(productCatalog, currentArgs);
+                    break;
+                case "add-count":
+                    newCommand = new AddCountCommand(productCatalog, currentArgs);
+                    break;
+                case "sub-count":
+                    newCommand = new SubstractCountCommand(productCatalog, currentArgs);
+                    break;
+                case "get-item":
+                    newCommand = new GetItemCommand(productCatalog, currentArgs);
+                    break;
             }
 
+            return newCommand;
         }
     }
 }

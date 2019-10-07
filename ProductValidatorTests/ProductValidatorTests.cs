@@ -7,22 +7,21 @@ namespace YooperTests
 {
     public class ProductValidatorTests
     {
-        ProductValidatorManager productValidatorManager;
+        private ProductValidatorManager productValidatorManager;
+
         [SetUp]
         public void Setup()
         {
             IProductCatalog productCatalog = new ProductCatalog("product_data");
-            productValidatorManager = productCatalog.GetProductValidator();
+            productValidatorManager = productCatalog.GetValidator();
         }
-        ///
-        /// Product name
-        /// 
 
+        /// Product name
         [TestCase("aaa")]
         public void TestValidateName_ShorterThanMinLength_ReturnFalse(string value)
         {
             Assume.That(value.Length, Is.LessThan(ProductValidator.MinNameLength));
-            bool result = productValidatorManager.Validate(new Book(), typeof(Book).GetProperty("Name"), value);
+            var result = productValidatorManager.Validate(new Book(), typeof(Book).GetProperty("Name"), value);
             Assert.That(!result);
         }
 
@@ -30,9 +29,10 @@ namespace YooperTests
         public void ValidateName_LongerThanMaxLength_ReturnFalse(string value)
         {
             Assume.That(value.Length, Is.GreaterThan(ProductValidator.MaxNameLength));
-            bool result = productValidatorManager.Validate(new Book(), typeof(Book).GetProperty("Name"), value);
+            var result = productValidatorManager.Validate(new Book(), typeof(Book).GetProperty("Name"), value);
             Assert.That(!result);
         }
+
         [TestCase("aaaa")]
         [TestCase("aaaaa")]
         [TestCase("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")]
@@ -40,7 +40,7 @@ namespace YooperTests
         {
             Assume.That(value.Length, Is.GreaterThanOrEqualTo(ProductValidator.MinNameLength));
             Assume.That(value.Length, Is.LessThanOrEqualTo(ProductValidator.MaxNameLength));
-            bool result = productValidatorManager.Validate(new Book(), typeof(Book).GetProperty("Name"), value);
+            var result = productValidatorManager.Validate(new Book(), typeof(Book).GetProperty("Name"), value);
             Assert.That(result);
         }
 
@@ -49,7 +49,7 @@ namespace YooperTests
         {
             Assume.That(value.Length, Is.GreaterThanOrEqualTo(ProductValidator.MinNameLength));
             Assume.That(value.Length, Is.LessThanOrEqualTo(ProductValidator.MaxNameLength));
-            bool result = productValidatorManager.Validate(new Book(), typeof(Book).GetProperty("Name"), value);
+            var result = productValidatorManager.Validate(new Book(), typeof(Book).GetProperty("Name"), value);
             Assert.That(!result);
         }
 
@@ -58,7 +58,7 @@ namespace YooperTests
         {
             Assume.That(value.Length, Is.GreaterThanOrEqualTo(ProductValidator.MinNameLength));
             Assume.That(value.Length, Is.LessThanOrEqualTo(ProductValidator.MaxNameLength));
-            bool result = productValidatorManager.Validate(new Book(), typeof(Book).GetProperty("Name"), value);
+            var result = productValidatorManager.Validate(new Book(), typeof(Book).GetProperty("Name"), value);
             Assert.That(!result);
         }
 
@@ -67,7 +67,7 @@ namespace YooperTests
         {
             Assume.That(value.Length, Is.GreaterThanOrEqualTo(ProductValidator.MinNameLength));
             Assume.That(value.Length, Is.LessThanOrEqualTo(ProductValidator.MaxNameLength));
-            bool result = productValidatorManager.Validate(new Book(), typeof(Book).GetProperty("Name"), value);
+            var result = productValidatorManager.Validate(new Book(), typeof(Book).GetProperty("Name"), value);
             Assert.That(!result);
         }
 
@@ -76,95 +76,93 @@ namespace YooperTests
         {
             Assume.That(value.Length, Is.GreaterThanOrEqualTo(ProductValidator.MinNameLength));
             Assume.That(value.Length, Is.LessThanOrEqualTo(ProductValidator.MaxNameLength));
-            bool result = productValidatorManager.Validate(new Book(), typeof(Book).GetProperty("Name"), value);
+            var result = productValidatorManager.Validate(new Book(), typeof(Book).GetProperty("Name"), value);
             Assert.That(!result);
         }
 
 
-        /// 
         /// Validate Unit
-        /// 
         [TestCase("aa aa")]
         public void ValidateUnit_ContainsMoreThenOneWord_ReturnFalse(string value)
         {
             Assume.That(value.Length, Is.GreaterThanOrEqualTo(ProductValidator.MinUnitLength));
             Assume.That(value.Length, Is.LessThanOrEqualTo(ProductValidator.MaxUnitLength));
-            bool result = productValidatorManager.Validate(new Book(), typeof(Book).GetProperty("Unit"), value);
+            var result = productValidatorManager.Validate(new Book(), typeof(Book).GetProperty("Unit"), value);
             Assert.That(!result);
         }
+
         [TestCase("aa55")]
         [TestCase("a--a")]
         public void ValidateUnit_ContainsNotLetters_ReturnFalse(string value)
         {
             Assume.That(value.Length, Is.GreaterThanOrEqualTo(ProductValidator.MinUnitLength));
             Assume.That(value.Length, Is.LessThanOrEqualTo(ProductValidator.MaxUnitLength));
-            bool result = productValidatorManager.Validate(new Book(), typeof(Book).GetProperty("Unit"), value);
+            var result = productValidatorManager.Validate(new Book(), typeof(Book).GetProperty("Unit"), value);
             Assert.That(!result);
         }
 
-        /// 
         /// ValidatePrice
-        /// 
         [TestCase("aaa")]
         [TestCase("aa1a1")]
         public void TestValidatePrice_ContainsNotNumber_ReturnFalse(string value)
         {
-            bool result = productValidatorManager.Validate(new Book(), typeof(Book).GetProperty("Price"), value);
+            var result = productValidatorManager.Validate(new Book(), typeof(Book).GetProperty("Price"), value);
             Assert.That(!result);
         }
+
         [TestCase("10,999")]
         [TestCase("10,000")]
         public void TestValidatePrice_ContainsMoreFractionDigitsThanTwo_ReturnFalse(string value)
         {
-            bool result = productValidatorManager.Validate(new Book(), typeof(Book).GetProperty("Price"), value);
+            var result = productValidatorManager.Validate(new Book(), typeof(Book).GetProperty("Price"), value);
             Assert.That(!result);
         }
+
         [TestCase("10,9")]
         [TestCase("10,0")]
         [TestCase("10")]
         public void TestValidatePrice_ContainsLessFractionDigitsThanTwo_ReturnFalse(string value)
         {
-            bool result = productValidatorManager.Validate(new Book(), typeof(Book).GetProperty("Price"), value);
+            var result = productValidatorManager.Validate(new Book(), typeof(Book).GetProperty("Price"), value);
             Assert.That(!result);
         }
+
         [TestCase("-10,99")]
         public void TestValidatePrice_ContainsNegativeNumber_ReturnFalse(string value)
         {
-            bool result = productValidatorManager.Validate(new Book(), typeof(Book).GetProperty("Price"), value);
+            var result = productValidatorManager.Validate(new Book(), typeof(Book).GetProperty("Price"), value);
             Assert.That(!result);
         }
+
         [TestCase("10,99")]
         [TestCase("10,00")]
         public void TestValidatePrice_ContainsTwoFractionDigits_ReturnTrue(string value)
         {
-            bool result = productValidatorManager.Validate(new Book(), typeof(Book).GetProperty("Price"), value);
+            var result = productValidatorManager.Validate(new Book(), typeof(Book).GetProperty("Price"), value);
             Assert.That(result);
         }
 
-        /// 
         /// ValidateCount
-        /// 
         [TestCase("aaa")]
         [TestCase("aa1a1")]
         public void TestValidateCount_ContainsNotNumber_ReturnFalse(string value)
         {
-            bool result = productValidatorManager.Validate(new Book(), typeof(Book).GetProperty("Count"), value);
+            var result = productValidatorManager.Validate(new Book(), typeof(Book).GetProperty("Count"), value);
             Assert.That(!result);
         }
 
         [TestCase("-1")]
         public void TestValidateCount_ContainsNegativeNumber_ReturnFalse(string value)
         {
-            bool result = productValidatorManager.Validate(new Book(), typeof(Book).GetProperty("Count"), value);
+            var result = productValidatorManager.Validate(new Book(), typeof(Book).GetProperty("Count"), value);
             Assert.That(!result);
         }
 
         [TestCase("100")]
         public void TestValidateCount_NormalCount_ReturnTrue(string value)
         {
-            bool result = productValidatorManager.Validate(new Book(), typeof(Book).GetProperty("Count"), value);
+            var result = productValidatorManager.Validate(new Book(), typeof(Book).GetProperty("Count"), value);
             Assert.That(result);
         }
-
     }
 }

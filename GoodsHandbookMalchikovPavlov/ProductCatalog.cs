@@ -1,110 +1,98 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Runtime.Serialization.Formatters.Binary;
 using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Runtime.Serialization.Formatters.Binary;
 using GoodsHandbookMalchikovPavlov.Models;
 using GoodsHandbookMalchikovPavlov.Validators;
-using System.Runtime.CompilerServices;
 
 [assembly: InternalsVisibleTo("ProductCatalogTests")]
 [assembly: InternalsVisibleTo("ProductValidatorTests")]
+
 namespace GoodsHandbookMalchikovPavlov
 {
     [Serializable]
     internal class ProductCatalogData
     {
-        public int MaxId { get; set; }
-        public Dictionary<int, Product> ProductMap { get; set; } = new Dictionary<int, Product>();
-        public string[] ProductTypeNames = new string[]
-            {
-                "Appliances",
-                "Book",
-                "Toy"
-            };
-        public Dictionary<string, string[]> ProductPropertyValidValues { get; set; } = new Dictionary<string, string[]>();
+        public string[] ProductTypeNames =
+        {
+            "Appliances",
+            "Book",
+            "Toy"
+        };
+
         public ProductCatalogData()
         {
-            ProductPropertyValidValues.Add("BookGenre", new string[]
-                {
-                    "Fairy Tale",
-                    "Mystic",
-                    "Fantasy",
-                    "Detective",
-                    "Psychology",
-                    "Popular Science",
-                    "Educational",
-                    "Sentimental Novel",
-                    "Teenage Prose"
-                });
-            ProductPropertyValidValues.Add("ToyCategory", new string[]
-                {
-                    "Educational",
-                    "Video Game",
-                    "Doll",
-                    "Electronic"
-                });
-            ProductPropertyValidValues.Add("ToySex", new string[]
-                {
-                    "Male",
-                    "Female",
-                    "Any"
-                });
-            ProductPropertyValidValues.Add("AppliancesCategory", new string[]
-                {
-                   "Refrigerator",
-                   "Stove",
-                   "Teapot"
-                });
+            ProductPropertyValidValues.Add("BookGenre", new[]
+            {
+                "Fairy Tale",
+                "Mystic",
+                "Fantasy",
+                "Detective",
+                "Psychology",
+                "Popular Science",
+                "Educational",
+                "Sentimental Novel",
+                "Teenage Prose"
+            });
+            ProductPropertyValidValues.Add("ToyCategory", new[]
+            {
+                "Educational",
+                "Video Game",
+                "Doll",
+                "Electronic"
+            });
+            ProductPropertyValidValues.Add("ToySex", new[]
+            {
+                "Male",
+                "Female",
+                "Any"
+            });
+            ProductPropertyValidValues.Add("AppliancesCategory", new[]
+            {
+                "Refrigerator",
+                "Stove",
+                "Teapot"
+            });
         }
+
+        public int MaxId { get; set; }
+        public Dictionary<int, Product> ProductMap { get; set; } = new Dictionary<int, Product>();
+
+        public Dictionary<string, string[]> ProductPropertyValidValues { get; set; } =
+            new Dictionary<string, string[]>();
     }
 
     internal sealed class ProductCatalog : IProductCatalog
     {
         private readonly string catalogDataFileName;
         private ProductCatalogData catalogData;
-        private ProductValidatorManager productValidatorManager;
+        private readonly ProductValidatorManager productValidatorManager;
+
         public ProductCatalog(string catalogDataFileName)
         {
             this.catalogDataFileName = catalogDataFileName;
-            bool success = File.Exists(catalogDataFileName);
-            CreateCatalogData( success);
+            var success = File.Exists(catalogDataFileName);
+            CreateCatalogData(success);
             productValidatorManager = new ProductValidatorManager(this);
         }
 
-        private void CreateCatalogData( bool success)
-        {
-            if (success)
-            {
-                var fs = File.Open(this.catalogDataFileName, FileMode.Open, FileAccess.Read);
-                success = fs.Length != 0;
-                if (success)
-                {
-                    BinaryFormatter formatter = new BinaryFormatter();
-                    catalogData = (ProductCatalogData) formatter.Deserialize(fs);
-                }
-
-                fs.Dispose();
-            }
-            else
-            { 
-                catalogData = new ProductCatalogData();
-            }
-        }
-
-        public bool DoesProductExist(int productId)
+        public bool IsExist(int productId)
         {
             return catalogData.ProductMap.ContainsKey(productId);
         }
-        public void AddProduct(Product product)
+
+        public void Add(Product product)
         {
             product.Id = catalogData.MaxId++;
             catalogData.ProductMap.Add(product.Id, product);
             WriteCatalogDataToFile();
         }
-        public void DeleteProduct(int productId)
+
+        public void Delete(int productId)
         {
-            if (DoesProductExist(productId))
+            if (IsExist(productId))
             {
                 catalogData.ProductMap.Remove(productId);
                 WriteCatalogDataToFile();
@@ -114,9 +102,10 @@ namespace GoodsHandbookMalchikovPavlov
                 throw new ArgumentException();
             }
         }
-        public void UpdateProduct(Product product)
+
+        public void Update(Product product)
         {
-            if (DoesProductExist(product.Id))
+            if (IsExist(product.Id))
             {
                 catalogData.ProductMap.Remove(product.Id);
                 catalogData.ProductMap.Add(product.Id, product);
@@ -127,84 +116,66 @@ namespace GoodsHandbookMalchikovPavlov
                 throw new ArgumentException();
             }
         }
-        public Product GetProduct(int productId)
+
+        public Product Get(int productId)
         {
-            if (DoesProductExist(productId))
-            {
+            if (IsExist(productId))
                 return catalogData.ProductMap[productId];
-            }
-            else
-            {
-                throw new ArgumentException();
-            }
+            throw new ArgumentException();
         }
-        public Product GetProduct(string productType)
+
+        public Product Get(string productType)
         {
             if (productType.Equals("BOOK", StringComparison.OrdinalIgnoreCase))
-            {
                 return new Book();
-            }
-            else if (productType.Equals("TOY", StringComparison.OrdinalIgnoreCase))
-            {
+            if (productType.Equals("TOY", StringComparison.OrdinalIgnoreCase))
                 return new Toy();
-            }
-            else if (productType.Equals("APPLIANCES", StringComparison.OrdinalIgnoreCase))
-            {
+            if (productType.Equals("APPLIANCES", StringComparison.OrdinalIgnoreCase))
                 return new Appliances();
-            }
-            else
-            {
-                throw new ArgumentException();
-            }
+            throw new ArgumentException();
         }
-        public ProductValidatorManager GetProductValidator()
+
+        public ProductValidatorManager GetValidator()
         {
             return productValidatorManager;
         }
-        public string[] GetProductTypeNames()
+
+        public IEnumerable<string> GetTypeNames()
         {
             return catalogData.ProductTypeNames;
         }
-        public string[] GetProductPropertyValidValues(PropertyInfo propertyInfo)
+
+        public IEnumerable<string> GetPropertyValidValues(PropertyInfo propertyInfo)
         {
-            string key = propertyInfo.DeclaringType.Name + propertyInfo.Name;
+            var key = propertyInfo.DeclaringType.Name + propertyInfo.Name;
             if (catalogData.ProductPropertyValidValues.ContainsKey(key))
-            {
                 return catalogData.ProductPropertyValidValues[key];
-            }
-            else
-            {
-                throw new ArgumentException();
-            }
+            throw new ArgumentException();
         }
 
         public IList<Product> GetProducts(string productTypeToFilterBy = null)
         {
             Type type = null;
             if (productTypeToFilterBy != null)
-            {
                 try
                 {
-                    type = GetProduct(productTypeToFilterBy).GetType();
+                    type = Get(productTypeToFilterBy).GetType();
                 }
                 catch (ArgumentException)
                 {
                     throw new ArgumentException();
                 }
-            }
-            List<Product> result = new List<Product>();
+
+            var result = new List<Product>();
             foreach (var p in catalogData.ProductMap.Values)
-            {
-                if (type== null || p.GetType().Equals(type))
-                {
+                if (type == null || p.GetType().Equals(type))
                     result.Add(p);
-                }
-            }
             return result;
         }
-        public void AddProductCount(int productId, int countToAdd)
+
+        public void AddCount(int productId, int countToAdd)
         {
-            if (DoesProductExist(productId))
+            if (IsExist(productId))
             {
                 catalogData.ProductMap[productId].Count += countToAdd;
                 WriteCatalogDataToFile();
@@ -214,11 +185,12 @@ namespace GoodsHandbookMalchikovPavlov
                 throw new ArgumentException();
             }
         }
-        public void SubstractProductCount(int productId, int countToSubstract)
+
+        public void SubstractCount(int productId, int countToSubstract)
         {
-            if (DoesProductExist(productId))
+            if (IsExist(productId))
             {
-                Product product = catalogData.ProductMap[productId];
+                var product = catalogData.ProductMap[productId];
                 if (product.Count - countToSubstract >= 0)
                 {
                     product.Count -= countToSubstract;
@@ -233,20 +205,50 @@ namespace GoodsHandbookMalchikovPavlov
             {
                 throw new ArgumentException();
             }
-            
+        }
+
+        public Product GetItem(int productId)
+        {
+            if (IsExist(productId))
+            {
+                var product = catalogData.ProductMap[productId];
+                return product;
+            }
+
+            return null;
         }
 
         public void ClearListCatalog()
         {
-            bool success = File.Exists(catalogDataFileName);
+            var success = File.Exists(catalogDataFileName);
             if (success)
             {
-                File.Delete(this.catalogDataFileName);
+                File.Delete(catalogDataFileName);
                 CreateCatalogData(false);
             }
             else
             {
                 CreateCatalogData(false);
+            }
+        }
+
+        private void CreateCatalogData(bool success)
+        {
+            if (success)
+            {
+                var fs = File.Open(catalogDataFileName, FileMode.Open, FileAccess.Read);
+                success = fs.Length != 0;
+                if (success)
+                {
+                    var formatter = new BinaryFormatter();
+                    catalogData = (ProductCatalogData) formatter.Deserialize(fs);
+                }
+
+                fs.Dispose();
+            }
+            else
+            {
+                catalogData = new ProductCatalogData();
             }
         }
 
@@ -257,6 +259,5 @@ namespace GoodsHandbookMalchikovPavlov
             formatter.Serialize(fs, catalogData);
             fs.Dispose();
         }
-        
     }
 }

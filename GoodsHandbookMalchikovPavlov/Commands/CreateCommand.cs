@@ -1,73 +1,66 @@
 ﻿using System;
-using System.Text;
 using System.Reflection;
+using System.Resources;
+using System.Text;
 using GoodsHandbookMalchikovPavlov.Models;
+using GoodsHandbookMalchikovPavlov.Properties;
 using GoodsHandbookMalchikovPavlov.Validators;
+
 namespace GoodsHandbookMalchikovPavlov.Commands
 {
-
-    /// <remarks>
-    /// 1. Нет комментариев.
-    /// 2. Где это возможно - делайте поля readonly.
-    /// 3. В вашей постановке это не имеет большого значения, но в более близких к реалиям программах необходимо
-    /// хранить строковые конструкции в ресурсах, чтобы их можно было а) легко изменить и б) локализовать.
-    /// </remarks>>
     /// <summary>
-    /// Добавление продукта в список
+    ///     Команда добавления продукта в список
     /// </summary>
     internal sealed class CreateCommand : ICommand
-
     {
-        private readonly string productTypeInputRequest =
-            "Enter \"product type\"";
-        private readonly string productPropertyInputRequest =
-            "Enter \"{0}\"";
-        private readonly string productTypeDoesntExist =
-            "Product type \"{0}\" does not exist" + Environment.NewLine +
-            "List of available product types:" + Environment.NewLine;
-        private readonly StringBuilder responseBuffer = new StringBuilder();
-        private bool firstTimeThrough = true;
-        private bool initialized = false;
-        private bool inputRequested = false;
-        private string[] args;
-        private Product product;
-        private PropertyInfo[] productProperties;
-        private int propertyIndex;
-        private readonly ProductValidator validator;
         private readonly IProductCatalog productCatalog;
 
-        public CreateCommand(IProductCatalog productCatalog,string[] args)
+        private readonly string productPropertyInputRequest =
+            "Enter \"{0}\"";
+
+        private readonly string productTypeInputRequest =
+            "Enter \"product type\"";
+
+        private readonly StringBuilder responseBuffer = new StringBuilder();
+        private readonly ProductValidatorManager validator;
+        private string[] args;
+        private bool firstTimeThrough = true;
+        private bool initialized;
+        private bool inputRequested;
+        private Product product;
+        private PropertyInfo[] productProperties;
+        private readonly string productTypeDoesntExist;
+        private int propertyIndex;
+        private readonly ResourceManager resourceManager = new ResourceManager(typeof(Resources));
+
+
+        public CreateCommand(IProductCatalog productCatalog, string[] args)
         {
-            if (!firstTimeThrough)
+            productTypeDoesntExist = resourceManager.GetString("CREATE_PRODUCTTYPEDOESNTEXIST");
+            this.args = args;
+            this.productCatalog = productCatalog;
+            validator = productCatalog.GetValidator();
+            var buffer = new StringBuilder(64);
+            buffer.Append(productTypeDoesntExist);
+            var names = productCatalog.GetTypeNames();
+            foreach (var name in names)
             {
-
-                this.productCatalog = productCatalog;
-                this.args = args;
-                validator = productCatalog.GetProductValidator();
-                StringBuilder buffer = new StringBuilder(64);
-                buffer.Append(productTypeDoesntExist);
-                string[] names = productCatalog.GetProductTypeNames();
-                foreach (var name in names)
-                {
-                    buffer.Append("-");
-                    buffer.Append(name);
-                    buffer.Append(Environment.NewLine);
-                }
-
-                productTypeDoesntExist = buffer.ToString();
+                buffer.Append("-");
+                buffer.Append(name);
+                buffer.Append(Environment.NewLine);
             }
+
+            productTypeDoesntExist = buffer.ToString();
         }
 
-        public CommandReturnCode Process(string input)
+        /// <summary>
+        ///     Процесс добавления продукта
+        /// </summary>
+        /// <param name="input">Новые аргументы</param>
+        /// <returns>Код возврата</returns>
+        public CommandReturnCode Process(string[] args)
         {
             responseBuffer.Length = 0;
-            // Мы уже получали список слов из входной строки в ProcessInput() выше в алгоритме.
-            // Зачем делать это снова?
-            // Что этот флаг означает? Я так и не смог попасть на кейс, когда "не-fitstTimeThrough"
-            if (firstTimeThrough)
-            {
-                return HandleFirstTimeThrough();
-            }
             if (inputRequested)
             {
                 if (Quit(args))
@@ -75,12 +68,14 @@ namespace GoodsHandbookMalchikovPavlov.Commands
                     Reset();
                     return CommandReturnCode.Done;
                 }
-                if (Update(input))
+
+                if (Update(args))
                 {
                     Reset();
                     return CommandReturnCode.Done;
                 }
             }
+
             SkipId();
             RequestInput();
             return CommandReturnCode.Undone;
@@ -91,51 +86,18 @@ namespace GoodsHandbookMalchikovPavlov.Commands
             return responseBuffer.ToString();
         }
 
-        private CommandReturnCode HandleFirstTimeThrough()
-        {
-            bool success = false;
-            if (args.Length == 1)
-            {
-                if (args[0].Equals("create", StringComparison.OrdinalIgnoreCase))
-                {
-                    success = true;
-                }
-            }
-            else if (args.Length == 2)
-            {
-                if (args[0].Equals("create", StringComparison.OrdinalIgnoreCase))
-                {
-                    if (Init(args[1]))
-                    {
-                        success = true;
-                    }
-                    else
-                    {
-                        responseBuffer.Append(string.Format(productTypeDoesntExist, args[1]));
-                    }
-                }
-            }
-            if (success)
-            {
-                firstTimeThrough = false;
-                SkipId();
-                RequestInput();
-                return CommandReturnCode.Undone;
-            }
-            return CommandReturnCode.Done;
-        }
-
         private bool Init(string productTypeName)
         {
             try
             {
-                product = productCatalog.GetProduct(productTypeName);
+                product = productCatalog.Get(productTypeName);
             }
             catch (ArgumentException)
             {
                 return false;
             }
-            Type productType = product.GetType();
+
+            var productType = product.GetType();
             productProperties = productType.GetProperties();
             Misc.SortProperties(productProperties, productType);
             propertyIndex = 0;
@@ -143,20 +105,20 @@ namespace GoodsHandbookMalchikovPavlov.Commands
             return true;
         }
 
+        /// <summary>
+        ///     Пропустить идентификатор
+        /// </summary>
         private void SkipId()
         {
             if (initialized)
-            {
                 if (productProperties[propertyIndex].Name.Equals("Id"))
-                {
-                    if ((propertyIndex + 1) < productProperties.Length)
-                    {
+                    if (propertyIndex + 1 < productProperties.Length)
                         propertyIndex++;
-                    }
-                }
-            }
         }
 
+        /// <summary>
+        ///     Запрос ввода
+        /// </summary>
         private void RequestInput()
         {
             if (!initialized)
@@ -165,21 +127,30 @@ namespace GoodsHandbookMalchikovPavlov.Commands
             }
             else
             {
-                string propertyName = Misc.GetPropertyName(productProperties[propertyIndex]);
+                var propertyName = Misc.GetPropertyName(productProperties[propertyIndex]);
                 responseBuffer.Append(string.Format(productPropertyInputRequest, propertyName));
             }
+
             inputRequested = true;
         }
 
+        /// <summary>
+        ///     Выход из процесса команды создания
+        /// </summary>
+        /// <param name="args">Ожидание команды выхода</param>
+        /// <returns></returns>
         private bool Quit(string[] args)
         {
-            if (args.Length == 1 && args[0].Equals("quit", StringComparison.OrdinalIgnoreCase))
-            {
-                return true;
-            }
+            if (args != null)
+                if (args.Length == 1 && args[0].Equals("quit", StringComparison.OrdinalIgnoreCase))
+                    return true;
+
             return false;
         }
 
+        /// <summary>
+        ///     Сброс параметров
+        /// </summary>
         private void Reset()
         {
             firstTimeThrough = true;
@@ -190,33 +161,33 @@ namespace GoodsHandbookMalchikovPavlov.Commands
             propertyIndex = 0;
         }
 
-        private bool Update(string input)
+        /// <summary>
+        ///     Заполнение полей продукта
+        /// </summary>
+        /// <param name="input">Ввод информации полей</param>
+        /// <returns></returns>
+        private bool Update(string[] args)
         {
             if (!initialized)
             {
-                string[] args = InputParser.GetWords(input);
                 if (args.Length == 1)
-                {
                     if (!Init(args[0]))
-                    {
                         responseBuffer.Append(string.Format(productTypeDoesntExist, args[0]));
-                    }
-                }
             }
             else
             {
-                PropertyInfo info = productProperties[propertyIndex];
-                bool isValid = validator.Validate(product, info, input);
+                var info = productProperties[propertyIndex];
+                var isValid = validator.Validate(product, info, args[0]);
                 if (isValid)
                 {
                     info.SetValue(product, validator.GetLastConvertedValue());
-                    if ((propertyIndex + 1) < productProperties.Length)
+                    if (propertyIndex + 1 < productProperties.Length)
                     {
                         propertyIndex++;
                     }
                     else
                     {
-                        productCatalog.AddProduct(product);
+                        productCatalog.Add(product);
                         return true;
                     }
                 }
@@ -225,6 +196,7 @@ namespace GoodsHandbookMalchikovPavlov.Commands
                     responseBuffer.Append(validator.GetLastErrorMessage());
                 }
             }
+
             return false;
         }
     }

@@ -1,8 +1,6 @@
-using System;
-using System.Collections.Generic;
-using NUnit.Framework;
 using GoodsHandbookMalchikovPavlov;
 using GoodsHandbookMalchikovPavlov.Models;
+using NUnit.Framework;
 
 namespace Tests
 {
@@ -18,27 +16,60 @@ namespace Tests
         }
 
         [Test]
-        public void ProductCatalogTests()
+        public void GetProductCatalogTests()
         {
             Product product = new Toy();
-            product.Name = "Barbie";
+            product.Name = "Barbie1";
             product.Count = 10;
             product.Price = 9999;
             product.Unit = "Шт";
-            productTestCatalog.AddProduct(product);
+            productTestCatalog.Add(product);
+            
+            ///Проверка Add
+            Assert.AreEqual(productTestCatalog.GetProducts().Count, 1);
+        }
 
-            ///Проверка GetProduct
-            Product product2 = productTestCatalog.GetProduct(0);
-            Assert.AreEqual(product2.Name, "Barbie");
+        [Test]
+        public void AddProductCatalogTests()
+        {
+            Product product = new Toy();
+            product.Name = "Barbie2";
+            product.Count = 10;
+            product.Price = 9999;
+            product.Unit = "Шт";
+            productTestCatalog.Add(product);
 
-            ///Проверка AddProduct
-            Assert.AreEqual(productTestCatalog.GetProducts().Count,1);
+            ///Проверка Get
+            var product2 = productTestCatalog.Get(0);
+            Assert.AreEqual(product2.Name, "Barbie2");
+        }
+
+        [Test]
+        public void DoesProductExistCatalogTests()
+        {
+            Product product = new Toy();
+            product.Name = "Barbie3";
+            product.Count = 10;
+            product.Price = 9999;
+            product.Unit = "Шт";
+            productTestCatalog.Add(product);
 
             bool isExist;
-            isExist = productTestCatalog.DoesProductExist(0);
+            isExist = productTestCatalog.IsExist(0);
 
-            ///Проверка DoesProductExist
+            ///Проверка IsExist
             Assert.True(isExist);
+        }
+
+        [Test]
+        public void UpdateProductCatalogTests()
+        {
+            Product product = new Toy();
+            product.Name = "Barbie1";
+            product.Count = 10;
+            product.Price = 9999;
+            product.Unit = "Шт";
+            productTestCatalog.Add(product);
 
             Product productNew2 = new Toy();
             productNew2.Name = "Barbie v2.0";
@@ -46,32 +77,64 @@ namespace Tests
             productNew2.Price = 9999;
             productNew2.Unit = "Шт";
             productNew2.Id = 0;
-            productTestCatalog.UpdateProduct(productNew2);
+            productTestCatalog.Update(productNew2);
 
-            ///Проверка UpdateProduct
-            Assert.AreEqual(productTestCatalog.GetProduct(0).Name, "Barbie v2.0");
+            ///Проверка Update
+            Assert.AreEqual(productTestCatalog.Get(0).Name, "Barbie v2.0");
+        }
+
+        [Test]
+        public void ApplianceProductCatalogTests()
+        {
+            Product product = new Toy();
+            product.Name = "Barbie1";
+            product.Count = 10;
+            product.Price = 9999;
+            product.Unit = "Шт";
+            productTestCatalog.Add(product);
 
             Product productNew3 = new Appliances();
             productNew3.Name = "Samsung";
             productNew3.Count = 20;
             productNew3.Price = 30000;
             productNew3.Unit = "Шт";
-            productTestCatalog.AddProduct(productNew3);
+            productTestCatalog.Add(productNew3);
 
             ///Проверка GetProducts
-            IList<Product> products = productTestCatalog.GetProducts();
+            var products = productTestCatalog.GetProducts();
             Assert.AreEqual(products.Count, 2);
-            Assert.AreEqual(products[0].Name, "Barbie v2.0");
-
-            ///Проверка AddProductCount
-            productTestCatalog.AddProductCount(0,90);
-            Assert.AreEqual(productTestCatalog.GetProduct(0).Count, 100);
-
-            ///Проверка SubstractProductCount
-            productTestCatalog.SubstractProductCount(1, 19);
-            Assert.AreEqual(productTestCatalog.GetProduct(1).Count, 1);
-
+            Assert.AreEqual(products[0].Name, "Barbie1");
         }
 
+        [Test]
+        public void AddProductCountCatalogTests()
+        {
+            Product product = new Toy();
+            product.Name = "Barbie1";
+            product.Count = 10;
+            product.Price = 9999;
+            product.Unit = "Шт";
+            productTestCatalog.Add(product);
+
+            ///Проверка AddCount
+            productTestCatalog.AddCount(0, 90);
+            Assert.AreEqual(productTestCatalog.Get(0).Count, 100);
+        }
+
+        [Test]
+        public void SubstractProductCountCatalogTests()
+        {
+            Product product = new Toy();
+            product.Name = "Barbie1";
+            product.Count = 20;
+            product.Price = 9999;
+            product.Unit = "Шт";
+            productTestCatalog.Add(product);
+
+            ///Проверка SubstractCount
+            productTestCatalog.SubstractCount(0, 19);
+            Assert.AreEqual(productTestCatalog.Get(0).Count, 1);
+        }
+        
     }
 }
