@@ -1,2 +1,1 @@
-# HandbookForGoodsMalchikovPavlov
-1 Lab
+# HandbookForGoodsMalchikov
