@@ -1,6 +1,6 @@
 # Handbook for Goods 
 
-Console applications to storage and accounting goods.
+Console applications to storage and accounting goods. 
 
 ### Technology stack / Libraries
   - C#
